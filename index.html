@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Hyper Island Journey — Immersive A-Frame Experience</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        #buttons {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            flex-wrap: wrap;
+        }
+
+        #backButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+        }
+
+        .zoomButton {
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #222831;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .zoomButton.enabled {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #storyOverlay {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 110px;
+            transform: translateX(-50%);
+            background: rgba(34, 40, 49, 0.95);
+            color: #fff;
+            font-size: 1.5rem;
+            max-width: 80vw;
+            padding: 1.3rem 2.3rem;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px #111a;
+            z-index: 2000;
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="buttons">
+        <div class="zoomButton" data-target="monitor001_3">Monitor</div>
+        <div class="zoomButton" data-target="bed">Bed</div>
+        <div class="zoomButton" data-target="houseplant_1">Plant</div>
+        <div class="zoomButton" data-target="Rack001_1">YT Frame</div>
+        <div class="zoomButton" data-target="Cylinder001">Wall Frame</div>
+        <div class="zoomButton" data-target="Speaker_1">Speaker</div>
+        <div class="zoomButton" data-target="Cube011_1">Light</div>
+    </div>
+
+    <div id="backButton">Back</div>
+    <div id="storyOverlay"></div>
+
+    <!-- Background Music: hidden audio, plays on user click -->
+    <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3" loop></audio>
+
+    <a-scene id="scene" xr-mode-ui="enabled: true" cursor="rayOrigin: mouse" raycaster="objects: .clickable"
+        renderer="antialias: true; precision: high;">
+        <a-sky color="#222831"></a-sky>
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
+        <a-assets>
+            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
+        </a-assets>
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <a-entity id="cameraRig" position="0 4 10">
+            <a-camera look-controls wasd-controls></a-camera>
+            <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+            <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        // Enable background music on first user click (browser policy fix)
+        window.addEventListener('click', function enableAudio() {
+            var audio = document.getElementById('bg-music');
+            if (audio && audio.paused) {
+                audio.play();
+                window.removeEventListener('click', enableAudio);
+            }
+        });
+
+        const sceneEl = document.querySelector('a-scene');
+        const modelEl = document.querySelector('#model');
+        const cameraEl = document.querySelector('#cameraRig');
+        const zoomButtons = document.querySelectorAll('.zoomButton');
+        const backButton = document.getElementById('backButton');
+        const storyOverlay = document.getElementById('storyOverlay');
+        const clickableObjects = {};
+
+        const defaultCameraPos = new THREE.Vector3(0, 4, 10);
+        const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+
+        const zoomDistances = {
+            'Speaker_1': 3,
+            'Cube011_1': 4,   // Light zoom distance
+            'default': 3.5
+        };
+
+        // Helper: Show/hide story overlays
+        function showStory(text) {
+            storyOverlay.innerHTML = text;
+            storyOverlay.style.display = "block";
+        }
+        function hideStory() {
+            storyOverlay.style.display = "none";
+        }
+
+        // Disable buttons initially
+        zoomButtons.forEach(button => {
+            button.classList.remove('enabled');
+        });
+
+        // Log mesh names and enable buttons after model loads
+        modelEl.addEventListener('model-loaded', () => {
+            const model = modelEl.getObject3D('mesh');
+            model.traverse(node => {
+                if (node.isMesh) {
+                    // console.log('Found mesh:', node.name);
+                    clickableObjects[node.name] = node;
+                    node.el = modelEl;
+                    node.className = 'clickable';
+                    node.el.classList.add('clickable');
+                }
+            });
+            // Now enable all zoom buttons
+            zoomButtons.forEach(button => {
+                button.classList.add('enabled');
+            });
+
+            // Show initial story overlay (Scene 1)
+            setTimeout(() => {
+                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
+            }, 700);
+        });
+
+        zoomButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (!button.classList.contains('enabled')) return;
+                const meshName = button.dataset.target;
+                focusOnObject(meshName);
+
+                // Show story text based on button
+                if (meshName === "monitor001_3") {
+                    showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+                } else if (meshName === "bed") {
+                    showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+                } else if (meshName === "houseplant_1") {
+                    showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
+                } else if (meshName === "Rack001_1") {
+                    showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
+                } else if (meshName === "Cylinder001") {
+                    showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
+                } else if (meshName === "Speaker_1") {
+                    showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
+                } else if (meshName === "Cube011_1") {
+                    showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
+                } else {
+                    showStory("");
+                }
+            });
+        });
+
+        sceneEl.addEventListener('click', () => {
+            const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
+            if (!intersection) return;
+            const clickedName = intersection.object.name;
+            focusOnObject(clickedName);
+        });
+
+        function focusOnObject(meshName) {
+            const cam3D = cameraEl.object3D;
+            const targetMesh = clickableObjects[meshName];
+            if (!targetMesh) {
+                alert("Object not found: " + meshName);
+                return;
+            }
+            const box = new THREE.Box3().setFromObject(targetMesh);
+            const center = box.getCenter(new THREE.Vector3());
+            let newCameraPos, lookAtTarget;
+
+            if (meshName === 'Cylinder001') {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
+                lookAtTarget = center.clone();
+            }
+            else if (meshName === 'bed') {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 8, 0));
+                lookAtTarget = center.clone();
+            }
+            else if (meshName === 'Cube011_1') {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 4));
+                lookAtTarget = center.clone();
+            }
+            else {
+                const direction = center.clone().sub(cam3D.position).normalize();
+                const zoomDistance = zoomDistances[meshName] || zoomDistances['default'];
+                newCameraPos = center.clone().add(direction.multiplyScalar(-zoomDistance));
+                lookAtTarget = center.clone();
+            }
+
+            new TWEEN.Tween(cam3D.position)
+                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+
+            const temp = { t: 0 };
+            const startQuat = cam3D.quaternion.clone();
+            const endQuat = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(newCameraPos, lookAtTarget, new THREE.Vector3(0, 1, 0))
+            );
+
+            new TWEEN.Tween(temp)
+                .to({ t: 1 }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate(() => {
+                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
+                })
+                .start();
+
+            backButton.style.display = "block";
+        }
+
+        backButton.addEventListener('click', () => {
+            const cam3D = cameraEl.object3D;
+            new TWEEN.Tween(cam3D.position)
+                .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+            const temp = { t: 0 };
+            const startQuat = cam3D.quaternion.clone();
+            const endQuat = defaultCameraQuat.clone();
+            new TWEEN.Tween(temp)
+                .to({ t: 1 }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate(() => {
+                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
+                })
+                .start();
+            backButton.style.display = "none";
+            hideStory();
+        });
+
+        function animate() { requestAnimationFrame(animate); TWEEN.update(); }
+        animate();
+    </script>
+</body>
+
+</html>
