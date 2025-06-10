@@ -26,6 +26,7 @@
             gap: 10px;
             z-index: 1000;
             flex-wrap: wrap;
+            pointer-events: auto;
         }
 
         #backButton {
@@ -39,6 +40,7 @@
             cursor: pointer;
             z-index: 1000;
             display: none;
+            pointer-events: auto;
         }
 
         .zoomButton {
@@ -51,7 +53,7 @@
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             opacity: 0.5;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .zoomButton.enabled {
@@ -72,9 +74,10 @@
             padding: 1.3rem 2.3rem;
             border-radius: 18px;
             box-shadow: 0 4px 32px #111a;
-            z-index: 2000;
+            z-index: 99999 !important;
             text-align: center;
             letter-spacing: 0.03em;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -94,7 +97,8 @@
     <div id="storyOverlay"></div>
 
     <!-- Background Music: hidden audio, plays on user click -->
-    <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3" loop></audio>
+    <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3"
+        loop></audio>
 
     <a-scene id="scene" xr-mode-ui="enabled: true" cursor="rayOrigin: mouse" raycaster="objects: .clickable"
         renderer="antialias: true; precision: high;">
@@ -104,7 +108,7 @@
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
-        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
             <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
@@ -135,17 +139,44 @@
 
         const zoomDistances = {
             'Speaker_1': 3,
-            'Cube011_1': 4,   // Light zoom distance
+            'Cube011_1': 4,
             'default': 3.5
         };
 
-        // Helper: Show/hide story overlays
         function showStory(text) {
             storyOverlay.innerHTML = text;
             storyOverlay.style.display = "block";
+            console.log("showStory called with text:", text);
         }
         function hideStory() {
             storyOverlay.style.display = "none";
+        }
+
+        // Super robust story function!
+        function showStoryForMesh(meshName) {
+            if (!meshName) return;
+            const lower = meshName.toLowerCase();
+            console.log("showStoryForMesh called with:", meshName);
+
+            if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
+                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+            } else if (lower.includes("monitor")) {
+                showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+            } else if (lower.includes("plant")) {
+                showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
+            } else if (lower.includes("rack")) {
+                showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
+            } else if (lower.includes("cylinder")) {
+                showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
+            } else if (lower.includes("speaker")) {
+                showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
+            } else if (lower.includes("cube011")) {
+                showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
+            } else if (lower.includes("cube")) {
+                showStory("🟪 <b>Cube Object</b><br>This is a generic cube in your scene.");
+            } else {
+                showStory("✨ <b>Something in My Room</b><br>This object is part of the story, but not a main scene highlight. Explore more!");
+            }
         }
 
         // Disable buttons initially
@@ -153,63 +184,54 @@
             button.classList.remove('enabled');
         });
 
-        // Log mesh names and enable buttons after model loads
+        // After model loads, map mesh names for click events
         modelEl.addEventListener('model-loaded', () => {
             const model = modelEl.getObject3D('mesh');
             model.traverse(node => {
                 if (node.isMesh) {
-                    // console.log('Found mesh:', node.name);
                     clickableObjects[node.name] = node;
-                    node.el = modelEl;
-                    node.className = 'clickable';
-                    node.el.classList.add('clickable');
+                    node.userData.clickable = true;
                 }
             });
-            // Now enable all zoom buttons
             zoomButtons.forEach(button => {
                 button.classList.add('enabled');
             });
 
-            // Show initial story overlay (Scene 1)
             setTimeout(() => {
                 showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
             }, 700);
         });
 
+        // UI button interactions
         zoomButtons.forEach(button => {
             button.addEventListener('click', () => {
                 if (!button.classList.contains('enabled')) return;
                 const meshName = button.dataset.target;
                 focusOnObject(meshName);
-
-                // Show story text based on button
-                if (meshName === "monitor001_3") {
-                    showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
-                } else if (meshName === "bed") {
-                    showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
-                } else if (meshName === "houseplant_1") {
-                    showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
-                } else if (meshName === "Rack001_1") {
-                    showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
-                } else if (meshName === "Cylinder001") {
-                    showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
-                } else if (meshName === "Speaker_1") {
-                    showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
-                } else if (meshName === "Cube011_1") {
-                    showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
-                } else {
-                    showStory("");
-                }
+                showStoryForMesh(meshName);
             });
         });
 
-        sceneEl.addEventListener('click', () => {
+        // VR controller and desktop click handling
+        modelEl.addEventListener('click', function (evt) {
+            let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
+            console.log("VR/Mesh Click detected. Name:", meshName);
+            if (!meshName) return;
+            focusOnObject(meshName);
+            showStoryForMesh(meshName);
+        });
+
+        // Desktop mouse picking on scene background (for completeness)
+        sceneEl.addEventListener('click', (e) => {
+            if (e.target.closest('#buttons, #backButton')) return;
             const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
             if (!intersection) return;
             const clickedName = intersection.object.name;
             focusOnObject(clickedName);
+            showStoryForMesh(clickedName);
         });
 
+        // Camera movement logic
         function focusOnObject(meshName) {
             const cam3D = cameraEl.object3D;
             const targetMesh = clickableObjects[meshName];
@@ -220,16 +242,17 @@
             const box = new THREE.Box3().setFromObject(targetMesh);
             const center = box.getCenter(new THREE.Vector3());
             let newCameraPos, lookAtTarget;
+            const lower = meshName.toLowerCase();
 
-            if (meshName === 'Cylinder001') {
+            if (lower.includes('cylinder')) {
                 newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
                 lookAtTarget = center.clone();
             }
-            else if (meshName === 'bed') {
+            else if (lower.includes('bed')) {
                 newCameraPos = center.clone().add(new THREE.Vector3(0, 8, 0));
                 lookAtTarget = center.clone();
             }
-            else if (meshName === 'Cube011_1') {
+            else if (lower.includes('cube011')) {
                 newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 4));
                 lookAtTarget = center.clone();
             }
