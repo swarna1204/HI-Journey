@@ -80,6 +80,32 @@
             pointer-events: none;
         }
     </style>
+    <!-- Custom component for mesh-level clickability -->
+    <script>
+        // Register mesh-clickable to make all child meshes clickable (desktop & VR)
+        AFRAME.registerComponent('mesh-clickable', {
+            init: function () {
+                this.el.addEventListener('model-loaded', e => {
+                    const obj = this.el.getObject3D('mesh');
+                    if (!obj) return;
+                    obj.traverse(node => {
+                        if (node.isMesh) {
+                            node.userData.clickable = true;
+                            node.el = this.el; // reference to entity
+                            // Desktop mouse events
+                            node.addEventListener('mousedown', evt => {
+                                this.el.emit('click', { intersection: { object: node } });
+                            });
+                            // VR controller/select events
+                            node.addEventListener('click', evt => {
+                                this.el.emit('click', { intersection: { object: node } });
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 </head>
 
 <body>
@@ -108,7 +134,9 @@
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
-        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <!-- Notice mesh-clickable here! -->
+        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"
+            mesh-clickable></a-entity>
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
             <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
@@ -212,7 +240,7 @@
             });
         });
 
-        // VR controller and desktop click handling
+        // VR controller and desktop click handling (now handled by mesh-clickable)
         modelEl.addEventListener('click', function (evt) {
             let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
             console.log("VR/Mesh Click detected. Name:", meshName);
