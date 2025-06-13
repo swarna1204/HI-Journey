@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>A-Frame VR Simple Click Test</title>
+    <title>A-Frame VR Click Test (Modern)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
         html,
@@ -36,8 +36,10 @@
     <a-scene>
         <a-box id="monitor-proxy" position="0 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"></a-box>
         <a-camera position="0 1.6 0"></a-camera>
-        <a-entity laser-controls="hand: right"></a-entity>
-        <a-entity laser-controls="hand: left"></a-entity>
+        <!-- KEY: add cursor="rayOrigin: controller" to laser-controls! -->
+        <a-entity laser-controls="hand: right" cursor="rayOrigin: controller"></a-entity>
+        <a-entity laser-controls="hand: left" cursor="rayOrigin: controller"></a-entity>
+        <!-- Optional: for desktop mouse -->
         <a-entity cursor="rayOrigin: mouse"></a-entity>
     </a-scene>
     <script>
@@ -48,8 +50,7 @@
             setTimeout(() => storyOverlay.style.display = 'none', 3000);
             console.log('[showStory]', text);
         }
-        const box = document.querySelector('#monitor-proxy');
-        box.addEventListener('click', (e) => {
+        document.querySelector('#monitor-proxy').addEventListener('click', (e) => {
             showStory('Monitor Clicked! [click event]');
             console.log('[click] event fired', e);
         });
