@@ -3,49 +3,110 @@
 
 <head>
     <meta charset="utf-8">
-    <title>A-Frame Minimal Click Test</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        #output {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 80px;
-            z-index: 999;
-            background: #0a0;
-            color: #fff;
-            text-align: center;
-            font-size: 2em;
-            display: none;
-        }
-    </style>
+    <title>VR Scene with Clickable Objects</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 </head>
 
 <body>
-    <div id="output"></div>
-    <a-scene>
-        <a-box id="clickable" position="0 1.6 -3" width="1" height="1" depth="1" color="#4CC3D9">
+    <a-scene background="color: #ECECEC">
+        <!-- Camera -->
+        <a-entity id="rig" position="0 1.6 3">
+            <a-camera look-controls wasd-controls>
+                <a-cursor position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                    material="color: black; shader: flat">
+                </a-cursor>
+            </a-camera>
+        </a-entity>
+
+        <!-- VR Controllers -->
+        <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left">
+        </a-entity>
+
+        <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right">
+        </a-entity>
+
+        <!-- Lights -->
+        <a-light type="ambient" color="#445" intensity="0.4"></a-light>
+        <a-light type="point" position="2 4 4" color="#FFF" intensity="0.8"></a-light>
+
+        <!-- Ground -->
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="20" height="20" color="#7BC8A4"></a-plane>
+
+        <!-- Geometric Objects -->
+        <a-box id="cube" position="-2 1 -5" color="#4CC3D9"
+            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
+            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
         </a-box>
-        <a-camera position="0 1.6 0"></a-camera>
-        <a-entity laser-controls="hand: right" cursor="rayOrigin: controller"></a-entity>
-        <a-entity laser-controls="hand: left" cursor="rayOrigin: controller"></a-entity>
+
+        <a-sphere id="sphere" position="0 1 -5" radius="0.5" color="#EF2D5E"
+            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
+            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
+        </a-sphere>
+
+        <a-cylinder id="cylinder" position="2 1 -5" radius="0.5" height="1" color="#FFC65D"
+            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
+            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
+        </a-cylinder>
+
+        <!-- Text Overlays -->
+        <a-text id="cubeText" value="Blue Cube Clicked!" position="-2 2.5 -4" align="center" color="black"
+            visible="false">
+        </a-text>
+
+        <a-text id="sphereText" value="Red Sphere Clicked!" position="0 2.5 -4" align="center" color="black"
+            visible="false">
+        </a-text>
+
+        <a-text id="cylinderText" value="Yellow Cylinder Clicked!" position="2 2.5 -4" align="center" color="black"
+            visible="false">
+        </a-text>
     </a-scene>
+
     <script>
-        const output = document.getElementById('output');
-        document.getElementById('clickable').addEventListener('click', () => {
-            output.textContent = "You CLICKED the box! 🎉";
-            output.style.display = "block";
-            setTimeout(() => output.style.display = 'none', 2500);
-            console.log('Box was clicked (VR or mouse)');
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('Setting up click handlers...');
+
+            const cube = document.querySelector('#cube');
+            const sphere = document.querySelector('#sphere');
+            const cylinder = document.querySelector('#cylinder');
+
+            const cubeText = document.querySelector('#cubeText');
+            const sphereText = document.querySelector('#sphereText');
+            const cylinderText = document.querySelector('#cylinderText');
+
+            function hideAllText() {
+                cubeText.setAttribute('visible', false);
+                sphereText.setAttribute('visible', false);
+                cylinderText.setAttribute('visible', false);
+            }
+
+            function showText(textElement) {
+                hideAllText();
+                textElement.setAttribute('visible', true);
+                setTimeout(() => {
+                    textElement.setAttribute('visible', false);
+                }, 3000);
+            }
+
+            cube.addEventListener('click', () => {
+                console.log('Cube clicked!');
+                showText(cubeText);
+                cube.setAttribute('animation__click', 'property: rotation; to: 0 360 0; dur: 1000');
+            });
+
+            sphere.addEventListener('click', () => {
+                console.log('Sphere clicked!');
+                showText(sphereText);
+                sphere.setAttribute('animation__click', 'property: position; to: 0 2 -5; dur: 500; dir: alternate; loop: 1');
+            });
+
+            cylinder.addEventListener('click', () => {
+                console.log('Cylinder clicked!');
+                showText(cylinderText);
+                cylinder.setAttribute('animation__click', 'property: scale; to: 1.5 1.5 1.5; dur: 500; dir: alternate; loop: 1');
+            });
+
+            console.log('Click handlers set up successfully');
         });
     </script>
 </body>
