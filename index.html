@@ -3,110 +3,100 @@
 
 <head>
     <meta charset="utf-8">
-    <title>VR Scene with Clickable Objects</title>
+    <title>Immersive VR Story Room</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <style>
+        #overlayText {
+            position: fixed;
+            left: 50%;
+            top: 100px;
+            transform: translateX(-50%);
+            background: rgba(34, 40, 49, 0.95);
+            color: #fff;
+            font-size: 1.3em;
+            padding: 1em 2em;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px #111a;
+            z-index: 9999;
+            text-align: center;
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
+    <div id="overlayText"></div>
+    <audio id="storyAudio" src="" preload="auto"></audio>
     <a-scene background="color: #ECECEC">
-        <!-- Camera -->
+        <a-assets>
+            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
+            <audio id="audioMonitor" src="audio/monitor.mp3"></audio>
+            <audio id="audioBed" src="audio/bed.mp3"></audio>
+            <audio id="audioPlant" src="audio/plant.mp3"></audio>
+        </a-assets>
+        <!-- Your GLB Room -->
+        <a-entity gltf-model="#roomModel" position="0 0 0" scale="1 1 1"></a-entity>
+
+        <!-- Hotspot: Monitor -->
+        <a-box id="monitor-proxy" position="1.2 1.0 -1.6" width="0.7" height="0.5" depth="0.1" color="#39f"
+            opacity="0.15" transparent="true"></a-box>
+        <!-- Hotspot: Bed -->
+        <a-box id="bed-proxy" position="0.1 0.5 -3.0" width="2.0" height="0.4" depth="1.0" color="#3f9" opacity="0.15"
+            transparent="true"></a-box>
+        <!-- Hotspot: Plant -->
+        <a-box id="plant-proxy" position="-1.5 0.5 -2.2" width="0.6" height="0.6" depth="0.6" color="#fc3"
+            opacity="0.15" transparent="true"></a-box>
+
+        <!-- 3D Text that floats above -->
+        <a-text id="floatingStory" value="" position="0 3 -2" width="4" color="#fff" align="center"
+            visible="false"></a-text>
+
+        <!-- Camera & Controllers -->
         <a-entity id="rig" position="0 1.6 3">
             <a-camera look-controls wasd-controls>
-                <a-cursor position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                    material="color: black; shader: flat">
-                </a-cursor>
+                <a-cursor></a-cursor>
             </a-camera>
         </a-entity>
-
-        <!-- VR Controllers -->
-        <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left">
-        </a-entity>
-
-        <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right">
-        </a-entity>
-
-        <!-- Lights -->
-        <a-light type="ambient" color="#445" intensity="0.4"></a-light>
-        <a-light type="point" position="2 4 4" color="#FFF" intensity="0.8"></a-light>
-
-        <!-- Ground -->
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="20" height="20" color="#7BC8A4"></a-plane>
-
-        <!-- Geometric Objects -->
-        <a-box id="cube" position="-2 1 -5" color="#4CC3D9"
-            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
-            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
-        </a-box>
-
-        <a-sphere id="sphere" position="0 1 -5" radius="0.5" color="#EF2D5E"
-            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
-            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
-        </a-sphere>
-
-        <a-cylinder id="cylinder" position="2 1 -5" radius="0.5" height="1" color="#FFC65D"
-            animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter"
-            animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave">
-        </a-cylinder>
-
-        <!-- Text Overlays -->
-        <a-text id="cubeText" value="Blue Cube Clicked!" position="-2 2.5 -4" align="center" color="black"
-            visible="false">
-        </a-text>
-
-        <a-text id="sphereText" value="Red Sphere Clicked!" position="0 2.5 -4" align="center" color="black"
-            visible="false">
-        </a-text>
-
-        <a-text id="cylinderText" value="Yellow Cylinder Clicked!" position="2 2.5 -4" align="center" color="black"
-            visible="false">
-        </a-text>
+        <a-entity laser-controls="hand: right"></a-entity>
+        <a-entity laser-controls="hand: left"></a-entity>
     </a-scene>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('Setting up click handlers...');
+        const overlay = document.getElementById('overlayText');
+        const floatingText = document.getElementById('floatingStory');
+        const audioMonitor = document.getElementById('audioMonitor');
+        const audioBed = document.getElementById('audioBed');
+        const audioPlant = document.getElementById('audioPlant');
 
-            const cube = document.querySelector('#cube');
-            const sphere = document.querySelector('#sphere');
-            const cylinder = document.querySelector('#cylinder');
+        function playAudio(audioEl) {
+            [audioMonitor, audioBed, audioPlant].forEach(a => a.pause());
+            audioEl.currentTime = 0;
+            audioEl.play();
+        }
 
-            const cubeText = document.querySelector('#cubeText');
-            const sphereText = document.querySelector('#sphereText');
-            const cylinderText = document.querySelector('#cylinderText');
+        function showOverlay(text, floatText, color = "#fff") {
+            overlay.textContent = text;
+            overlay.style.display = "block";
+            floatingText.setAttribute("value", floatText);
+            floatingText.setAttribute("color", color);
+            floatingText.setAttribute("visible", "true");
+            setTimeout(() => {
+                overlay.style.display = "none";
+                floatingText.setAttribute("visible", "false");
+            }, 4000);
+        }
 
-            function hideAllText() {
-                cubeText.setAttribute('visible', false);
-                sphereText.setAttribute('visible', false);
-                cylinderText.setAttribute('visible', false);
-            }
-
-            function showText(textElement) {
-                hideAllText();
-                textElement.setAttribute('visible', true);
-                setTimeout(() => {
-                    textElement.setAttribute('visible', false);
-                }, 3000);
-            }
-
-            cube.addEventListener('click', () => {
-                console.log('Cube clicked!');
-                showText(cubeText);
-                cube.setAttribute('animation__click', 'property: rotation; to: 0 360 0; dur: 1000');
-            });
-
-            sphere.addEventListener('click', () => {
-                console.log('Sphere clicked!');
-                showText(sphereText);
-                sphere.setAttribute('animation__click', 'property: position; to: 0 2 -5; dur: 500; dir: alternate; loop: 1');
-            });
-
-            cylinder.addEventListener('click', () => {
-                console.log('Cylinder clicked!');
-                showText(cylinderText);
-                cylinder.setAttribute('animation__click', 'property: scale; to: 1.5 1.5 1.5; dur: 500; dir: alternate; loop: 1');
-            });
-
-            console.log('Click handlers set up successfully');
+        document.getElementById('monitor-proxy').addEventListener('click', () => {
+            playAudio(audioMonitor);
+            showOverlay("Monitor: Coding late into the night, every click a step forward.", "Monitor Story", "#00f");
+        });
+        document.getElementById('bed-proxy').addEventListener('click', () => {
+            playAudio(audioBed);
+            showOverlay("Bed: Balancing motherhood and ambition—resting and dreaming.", "Bed Story", "#0f0");
+        });
+        document.getElementById('plant-proxy').addEventListener('click', () => {
+            playAudio(audioPlant);
+            showOverlay("Plant: Quiet growth, new roots, new city.", "Plant Story", "#fc3");
         });
     </script>
 </body>
