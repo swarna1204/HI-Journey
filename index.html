@@ -79,6 +79,11 @@
             letter-spacing: 0.03em;
             pointer-events: none;
         }
+
+        .aframe-hovered {
+            outline: 3px solid #21c06b !important;
+            filter: brightness(1.2) drop-shadow(0 0 15px #21c06bAA);
+        }
     </style>
 </head>
 
@@ -92,38 +97,31 @@
         <div class="zoomButton" data-target="Speaker_1">Speaker</div>
         <div class="zoomButton" data-target="Cube011_1">Light</div>
     </div>
-
     <div id="backButton">Back</div>
     <div id="storyOverlay"></div>
-
-    <!-- Background Music: hidden audio, plays on user click -->
     <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3"
         loop></audio>
-
-    <a-scene id="scene" xr-mode-ui="enabled: true" cursor="rayOrigin: mouse" raycaster="objects: .clickable"
-        renderer="antialias: true; precision: high;">
+    <a-scene id="scene" xr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
         <a-sky color="#222831"></a-sky>
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
-        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <!-- MAIN MODEL: -->
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
-            <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
-            <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
+            <a-entity laser-controls="hand: right" raycaster="objects: .mesh-clickable"></a-entity>
+            <a-entity laser-controls="hand: left" raycaster="objects: .mesh-clickable"></a-entity>
         </a-entity>
+        <!-- Invisible cursor for desktop (optional) -->
+        <a-entity id="cursor" cursor="rayOrigin: mouse" raycaster="objects: .mesh-clickable"></a-entity>
     </a-scene>
-
     <script>
-        // Enable background music on first user click (browser policy fix)
         window.addEventListener('click', function enableAudio() {
             var audio = document.getElementById('bg-music');
-            if (audio && audio.paused) {
-                audio.play();
-                window.removeEventListener('click', enableAudio);
-            }
+            if (audio && audio.paused) { audio.play(); window.removeEventListener('click', enableAudio); }
         });
 
         const sceneEl = document.querySelector('a-scene');
@@ -136,28 +134,18 @@
 
         const defaultCameraPos = new THREE.Vector3(0, 4, 10);
         const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
-
         const zoomDistances = {
             'Speaker_1': 3,
             'Cube011_1': 4,
             'default': 3.5
         };
 
-        function showStory(text) {
-            storyOverlay.innerHTML = text;
-            storyOverlay.style.display = "block";
-            console.log("showStory called with text:", text);
-        }
-        function hideStory() {
-            storyOverlay.style.display = "none";
-        }
+        function showStory(text) { storyOverlay.innerHTML = text; storyOverlay.style.display = "block"; }
+        function hideStory() { storyOverlay.style.display = "none"; }
 
-        // Super robust story function!
         function showStoryForMesh(meshName) {
             if (!meshName) return;
             const lower = meshName.toLowerCase();
-            console.log("showStoryForMesh called with:", meshName);
-
             if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
                 showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
             } else if (lower.includes("monitor")) {
@@ -179,30 +167,63 @@
             }
         }
 
-        // Disable buttons initially
-        zoomButtons.forEach(button => {
-            button.classList.remove('enabled');
-        });
+        zoomButtons.forEach(button => { button.classList.remove('enabled'); });
 
-        // After model loads, map mesh names for click events
+        // --- NEW: Add clickable and event to every mesh in the GLB model for VR and desktop! ---
         modelEl.addEventListener('model-loaded', () => {
             const model = modelEl.getObject3D('mesh');
             model.traverse(node => {
                 if (node.isMesh) {
                     clickableObjects[node.name] = node;
+                    // Make mesh raycastable
                     node.userData.clickable = true;
+                    // Add A-Frame class for raycaster query
+                    if (!node.el) {
+                        // If mesh has no .el, create one temporarily (A-Frame will raycast fine as long as .classList is present)
+                        node.el = modelEl;
+                    }
+                    if (node.el.classList) node.el.classList.add('mesh-clickable');
+                    // Attach VR + desktop interaction
+                    node.onBeforeRender = function () { /* No-op, just to keep a reference if needed */ };
                 }
             });
-            zoomButtons.forEach(button => {
-                button.classList.add('enabled');
+
+            // Register event listeners for all mesh-clickable objects:
+            // VR raycaster and desktop raycaster will trigger 'raycaster-intersected' and 'raycaster-intersected-cleared'
+            sceneEl.addEventListener('raycaster-intersection', function (evt) {
+                const els = evt.detail.els || [];
+                els.forEach(el => {
+                    el.object3D.traverse(mesh => {
+                        if (mesh.isMesh && mesh.userData.clickable) mesh.el.classList.add('aframe-hovered');
+                    });
+                });
             });
+            sceneEl.addEventListener('raycaster-intersection-cleared', function (evt) {
+                const els = evt.detail.clearedEls || [];
+                els.forEach(el => {
+                    el.object3D.traverse(mesh => {
+                        if (mesh.isMesh && mesh.userData.clickable) mesh.el.classList.remove('aframe-hovered');
+                    });
+                });
+            });
+
+            // Listen for "click" (trigger press) on mesh (for VR controller + desktop cursor)
+            modelEl.addEventListener('click', function (evt) {
+                let meshName = evt.detail && evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
+                if (!meshName) return;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+
+            // Enable UI buttons
+            zoomButtons.forEach(button => { button.classList.add('enabled'); });
 
             setTimeout(() => {
                 showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
             }, 700);
         });
 
-        // UI button interactions
+        // UI button click = camera jump & show story
         zoomButtons.forEach(button => {
             button.addEventListener('click', () => {
                 if (!button.classList.contains('enabled')) return;
@@ -212,38 +233,14 @@
             });
         });
 
-        // VR controller and desktop click handling
-        modelEl.addEventListener('click', function (evt) {
-            let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
-            console.log("VR/Mesh Click detected. Name:", meshName);
-            if (!meshName) return;
-            focusOnObject(meshName);
-            showStoryForMesh(meshName);
-        });
-
-        // Desktop mouse picking on scene background (for completeness)
-        sceneEl.addEventListener('click', (e) => {
-            if (e.target.closest('#buttons, #backButton')) return;
-            const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
-            if (!intersection) return;
-            const clickedName = intersection.object.name;
-            focusOnObject(clickedName);
-            showStoryForMesh(clickedName);
-        });
-
-        // Camera movement logic
         function focusOnObject(meshName) {
             const cam3D = cameraEl.object3D;
             const targetMesh = clickableObjects[meshName];
-            if (!targetMesh) {
-                alert("Object not found: " + meshName);
-                return;
-            }
+            if (!targetMesh) { alert("Object not found: " + meshName); return; }
             const box = new THREE.Box3().setFromObject(targetMesh);
             const center = box.getCenter(new THREE.Vector3());
             let newCameraPos, lookAtTarget;
             const lower = meshName.toLowerCase();
-
             if (lower.includes('cylinder')) {
                 newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
                 lookAtTarget = center.clone();
