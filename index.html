@@ -98,7 +98,7 @@
     <div id="storyOverlay"></div>
 
     <!-- Background Music: hidden audio, plays on user click -->
-    <audio id="bg-music" src="audio/musicbg.mp3"
+    <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3"
         loop></audio>
 
     <a-scene id="scene" vr-mode-ui="enabled: true" cursor="rayOrigin: mouse"
@@ -119,18 +119,18 @@
             <a-camera look-controls wasd-controls>
                 <!-- Desktop cursor -->
                 <a-cursor position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                    material="color: white; shader: flat" raycaster="objects: .clickable">
+                    material="color: white; shader: flat" raycaster="objects: .clickable, .clickable-mesh">
                 </a-cursor>
             </a-camera>
 
             <!-- VR Hand Controllers with proper raycasters -->
             <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: lowPoly; color: #ffb400"
-                raycaster="objects: .clickable; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
+                raycaster="objects: .clickable, .clickable-mesh; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
                 laser-controls="hand: left">
             </a-entity>
 
             <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: lowPoly; color: #ffb400"
-                raycaster="objects: .clickable; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
+                raycaster="objects: .clickable, .clickable-mesh; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
                 laser-controls="hand: right">
             </a-entity>
         </a-entity>
@@ -221,11 +221,46 @@
             console.log('Model loaded, setting up interactions...');
             const model = modelEl.getObject3D('mesh');
 
+            // Create clickable entities for each mesh
             model.traverse(node => {
-                if (node.isMesh) {
+                if (node.isMesh && node.name) {
                     clickableObjects[node.name] = node;
                     node.userData.clickable = true;
                     console.log('Found mesh:', node.name);
+
+                    // Create invisible clickable boxes for each mesh
+                    const box = new THREE.Box3().setFromObject(node);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+
+                    // Create A-Frame entity for this mesh
+                    const clickableEntity = document.createElement('a-entity');
+                    clickableEntity.setAttribute('class', 'clickable-mesh');
+                    clickableEntity.setAttribute('geometry', {
+                        primitive: 'box',
+                        width: size.x,
+                        height: size.y,
+                        depth: size.z
+                    });
+                    clickableEntity.setAttribute('material', {
+                        opacity: 0,
+                        transparent: true
+                    });
+                    clickableEntity.setAttribute('position', {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    });
+                    clickableEntity.setAttribute('data-mesh-name', node.name);
+
+                    // Add click event to the invisible box
+                    clickableEntity.addEventListener('click', function (evt) {
+                        console.log('Clickable entity clicked:', node.name);
+                        handleMeshClick(node.name);
+                        evt.stopPropagation();
+                    });
+
+                    modelEl.appendChild(clickableEntity);
                 }
             });
 
@@ -248,78 +283,85 @@
             });
         });
 
-        // Enhanced VR Controller Events - Multiple approaches for reliability
+        // Enhanced VR Controller Events - Simplified approach
         function setupVRInteractions() {
             console.log('Setting up VR interactions...');
 
-            // Method 1: Raycaster intersection events
-            leftHand.addEventListener('raycaster-intersection', function (evt) {
-                console.log('Left hand intersection:', evt.detail.el, evt.detail.intersection);
-                const obj = evt.detail.intersection.object;
-                if (obj && obj.name) {
-                    console.log('Left hand intersecting:', obj.name);
-                }
-            });
-
-            rightHand.addEventListener('raycaster-intersection', function (evt) {
-                console.log('Right hand intersection:', evt.detail.el, evt.detail.intersection);
-                const obj = evt.detail.intersection.object;
-                if (obj && obj.name) {
-                    console.log('Right hand intersecting:', obj.name);
-                }
-            });
-
-            // Method 2: Trigger events
+            // Simple trigger events for both hands
             leftHand.addEventListener('triggerdown', function (evt) {
-                console.log('Left trigger down');
-                const raycaster = leftHand.components.raycaster;
-                if (raycaster && raycaster.intersectedEl === modelEl) {
-                    const intersection = raycaster.getIntersection(modelEl);
-                    if (intersection && intersection.object && intersection.object.name) {
-                        console.log('Left hand clicked:', intersection.object.name);
-                        handleMeshClick(intersection.object.name);
-                    }
-                }
+                console.log('Left trigger pressed');
+                checkVRIntersection(leftHand, 'left');
             });
 
             rightHand.addEventListener('triggerdown', function (evt) {
-                console.log('Right trigger down');
-                const raycaster = rightHand.components.raycaster;
-                if (raycaster && raycaster.intersectedEl === modelEl) {
-                    const intersection = raycaster.getIntersection(modelEl);
-                    if (intersection && intersection.object && intersection.object.name) {
-                        console.log('Right hand clicked:', intersection.object.name);
-                        handleMeshClick(intersection.object.name);
-                    }
-                }
+                console.log('Right trigger pressed');
+                checkVRIntersection(rightHand, 'right');
             });
 
-            // Method 3: Direct click events on model
-            modelEl.addEventListener('click', function (evt) {
-                console.log('Model click from VR or desktop:', evt.detail);
-                if (evt.detail && evt.detail.intersection && evt.detail.intersection.object) {
-                    const meshName = evt.detail.intersection.object.name;
+            // Alternative click events
+            leftHand.addEventListener('click', function (evt) {
+                console.log('Left hand click event:', evt.detail);
+                if (evt.detail && evt.detail.intersection) {
+                    const meshName = getMeshNameFromIntersection(evt.detail.intersection);
                     if (meshName) {
-                        console.log('Clicked mesh name:', meshName);
+                        console.log('Left click mesh:', meshName);
                         handleMeshClick(meshName);
                     }
                 }
             });
 
-            // Method 4: Laser controls events
-            leftHand.addEventListener('lasermousedown', function (evt) {
-                console.log('Left laser mouse down:', evt);
-                if (evt.detail && evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name) {
-                    handleMeshClick(evt.detail.intersection.object.name);
+            rightHand.addEventListener('click', function (evt) {
+                console.log('Right hand click event:', evt.detail);
+                if (evt.detail && evt.detail.intersection) {
+                    const meshName = getMeshNameFromIntersection(evt.detail.intersection);
+                    if (meshName) {
+                        console.log('Right click mesh:', meshName);
+                        handleMeshClick(meshName);
+                    }
                 }
             });
+        }
 
-            rightHand.addEventListener('lasermousedown', function (evt) {
-                console.log('Right laser mouse down:', evt);
-                if (evt.detail && evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name) {
-                    handleMeshClick(evt.detail.intersection.object.name);
+        function checkVRIntersection(handEl, handName) {
+            const raycaster = handEl.components.raycaster;
+            if (!raycaster) {
+                console.log('No raycaster found for', handName, 'hand');
+                return;
+            }
+
+            const intersectedEl = raycaster.intersectedEl;
+            console.log(handName + ' hand intersected element:', intersectedEl);
+
+            if (intersectedEl) {
+                // Check if it's our model or a clickable mesh
+                if (intersectedEl === modelEl) {
+                    const intersection = raycaster.getIntersection(modelEl);
+                    if (intersection && intersection.object && intersection.object.name) {
+                        console.log(handName + ' hand hit mesh:', intersection.object.name);
+                        handleMeshClick(intersection.object.name);
+                        return;
+                    }
                 }
-            });
+
+                // Check if it's a clickable-mesh entity
+                if (intersectedEl.classList.contains('clickable-mesh')) {
+                    const meshName = intersectedEl.getAttribute('data-mesh-name');
+                    if (meshName) {
+                        console.log(handName + ' hand hit clickable entity:', meshName);
+                        handleMeshClick(meshName);
+                        return;
+                    }
+                }
+            }
+
+            console.log(handName + ' hand: no valid intersection found');
+        }
+
+        function getMeshNameFromIntersection(intersection) {
+            if (intersection && intersection.object && intersection.object.name) {
+                return intersection.object.name;
+            }
+            return null;
         }
 
         // Wait for scene to be ready, then setup VR interactions
