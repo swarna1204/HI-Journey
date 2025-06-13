@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Immersive VR Story Room</title>
+    <title>A-Frame Story Click Test</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         #overlayText {
@@ -26,77 +26,45 @@
 
 <body>
     <div id="overlayText"></div>
-    <audio id="storyAudio" src="" preload="auto"></audio>
+    <audio id="audioBeep" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9c4b20.mp3"></audio>
     <a-scene background="color: #ECECEC">
-        <a-assets>
-            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
-            <audio id="audioMonitor" src="audio/monitor.mp3"></audio>
-            <audio id="audioBed" src="audio/bed.mp3"></audio>
-            <audio id="audioPlant" src="audio/plant.mp3"></audio>
-        </a-assets>
-        <!-- Your GLB Room -->
-        <a-entity gltf-model="#roomModel" position="0 0 0" scale="1 1 1"></a-entity>
-
-        <!-- Hotspot: Monitor -->
-        <a-box id="monitor-proxy" position="1.2 1.0 -1.6" width="0.7" height="0.5" depth="0.1" color="#39f"
-            opacity="0.15" transparent="true"></a-box>
-        <!-- Hotspot: Bed -->
-        <a-box id="bed-proxy" position="0.1 0.5 -3.0" width="2.0" height="0.4" depth="1.0" color="#3f9" opacity="0.15"
-            transparent="true"></a-box>
-        <!-- Hotspot: Plant -->
-        <a-box id="plant-proxy" position="-1.5 0.5 -2.2" width="0.6" height="0.6" depth="0.6" color="#fc3"
-            opacity="0.15" transparent="true"></a-box>
-
-        <!-- 3D Text that floats above -->
-        <a-text id="floatingStory" value="" position="0 3 -2" width="4" color="#fff" align="center"
-            visible="false"></a-text>
-
-        <!-- Camera & Controllers -->
-        <a-entity id="rig" position="0 1.6 3">
-            <a-camera look-controls wasd-controls>
-                <a-cursor></a-cursor>
-            </a-camera>
-        </a-entity>
+        <a-box id="monitor-proxy" position="-1 1.5 -4" width="1" height="1" depth="1" color="#39f" opacity="0.7">
+        </a-box>
+        <a-box id="bed-proxy" position="0 1.5 -4" width="1" height="1" depth="1" color="#3f9" opacity="0.7">
+        </a-box>
+        <a-box id="plant-proxy" position="1 1.5 -4" width="1" height="1" depth="1" color="#fc3" opacity="0.7">
+        </a-box>
+        <a-camera position="0 1.6 0"></a-camera>
         <a-entity laser-controls="hand: right"></a-entity>
         <a-entity laser-controls="hand: left"></a-entity>
     </a-scene>
-
     <script>
         const overlay = document.getElementById('overlayText');
-        const floatingText = document.getElementById('floatingStory');
-        const audioMonitor = document.getElementById('audioMonitor');
-        const audioBed = document.getElementById('audioBed');
-        const audioPlant = document.getElementById('audioPlant');
+        const audio = document.getElementById('audioBeep');
 
-        function playAudio(audioEl) {
-            [audioMonitor, audioBed, audioPlant].forEach(a => a.pause());
-            audioEl.currentTime = 0;
-            audioEl.play();
-        }
-
-        function showOverlay(text, floatText, color = "#fff") {
+        function showOverlay(text) {
             overlay.textContent = text;
             overlay.style.display = "block";
-            floatingText.setAttribute("value", floatText);
-            floatingText.setAttribute("color", color);
-            floatingText.setAttribute("visible", "true");
             setTimeout(() => {
                 overlay.style.display = "none";
-                floatingText.setAttribute("visible", "false");
-            }, 4000);
+            }, 2000);
+        }
+        function playBeep() {
+            audio.currentTime = 0;
+            audio.play();
         }
 
         document.getElementById('monitor-proxy').addEventListener('click', () => {
-            playAudio(audioMonitor);
-            showOverlay("Monitor: Coding late into the night, every click a step forward.", "Monitor Story", "#00f");
+            showOverlay("Monitor clicked!");
+            playBeep();
         });
         document.getElementById('bed-proxy').addEventListener('click', () => {
-            playAudio(audioBed);
-            showOverlay("Bed: Balancing motherhood and ambition—resting and dreaming.", "Bed Story", "#0f0");
+            showOverlay("Bed clicked!");
+            playBeep();
         });
         document.getElementById('plant-proxy').addEventListener('click', () => {
-            playAudio(audioPlant);
-            showOverlay("Plant: Quiet growth, new roots, new city.", "Plant Story", "#fc3");
+            showOverlay("Plant clicked!");
+            playBeep();
         });
     </script>
 </body>
