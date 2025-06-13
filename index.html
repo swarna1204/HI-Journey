@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>A-Frame VR Guaranteed Click Test</title>
-    <meta name="description" content="A-Frame VR click test">
+    <title>A-Frame Minimal Click Test</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
         html,
@@ -37,12 +36,10 @@
         <a-box id="clickable" position="0 1.6 -3" width="1" height="1" depth="1" color="#4CC3D9">
         </a-box>
         <a-camera position="0 1.6 0"></a-camera>
-        <!-- THIS is all you need for Quest VR click -->
         <a-entity laser-controls="hand: right" cursor="rayOrigin: controller"></a-entity>
         <a-entity laser-controls="hand: left" cursor="rayOrigin: controller"></a-entity>
     </a-scene>
     <script>
-        // Click listener
         const output = document.getElementById('output');
         document.getElementById('clickable').addEventListener('click', () => {
             output.textContent = "You CLICKED the box! 🎉";
