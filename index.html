@@ -3,9 +3,10 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Hyper Island Journey — VR Proxy Example</title>
+    <title>Hyper Island Journey — Immersive A-Frame Experience</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <!-- Add A-Frame Super Hands for robust VR controller support -->
     <script
         src="https://cdn.jsdelivr.net/npm/aframe-super-hands-component@6.0.4/dist/aframe-super-hands.min.js"></script>
     <style>
@@ -17,6 +18,50 @@
             height: 100%;
             overflow: hidden;
             font-family: Arial, sans-serif;
+        }
+
+        #buttons {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            flex-wrap: wrap;
+            pointer-events: auto;
+        }
+
+        #backButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            pointer-events: auto;
+        }
+
+        .zoomButton {
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #222831;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            opacity: 0.5;
+            pointer-events: auto;
+        }
+
+        .zoomButton.enabled {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #storyOverlay {
@@ -34,19 +79,8 @@
             box-shadow: 0 4px 32px #111a;
             z-index: 99999 !important;
             text-align: center;
-        }
-
-        #backButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1000;
-            display: none;
+            letter-spacing: 0.03em;
+            pointer-events: none;
         }
 
         .aframe-hovered {
@@ -57,106 +91,211 @@
 </head>
 
 <body>
-    <div id="storyOverlay"></div>
+    <div id="buttons">
+        <div class="zoomButton" data-target="monitor001_3">Monitor</div>
+        <div class="zoomButton" data-target="bed">Bed</div>
+        <div class="zoomButton" data-target="houseplant_1">Plant</div>
+        <div class="zoomButton" data-target="Rack001_1">YT Frame</div>
+        <div class="zoomButton" data-target="Cylinder001">Wall Frame</div>
+        <div class="zoomButton" data-target="Speaker_1">Speaker</div>
+        <div class="zoomButton" data-target="Cube011_1">Light</div>
+    </div>
     <div id="backButton">Back</div>
-    <a-scene xr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
+    <div id="storyOverlay"></div>
+    <audio id="bg-music" src="music/believe-emotional-beautiful-peaceful-hopeful-piano-with-orchestra-219416.mp3"
+        loop></audio>
+    <a-scene id="scene" xr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
         <a-sky color="#222831"></a-sky>
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
-        <!-- Main room model (position/scale as before) -->
+        <!-- MAIN MODEL: -->
         <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
-        <!-- Proxy for Monitor (adjust position/size to match your GLB monitor object!) -->
-        <a-entity id="monitor-proxy" geometry="primitive: box; width: 1.2; height: 0.7; depth: 0.2"
-            position="1.3 1.3 -1.6" material="color: #fff; opacity: 0; transparent: true"
-            class="intersectable"></a-entity>
-        <!-- Proxy for Bed (adjust position/size to match your GLB bed object!) -->
-        <a-entity id="bed-proxy" geometry="primitive: box; width: 2.5; height: 0.6; depth: 1.2" position="0.1 0.8 -3"
-            material="color: #fff; opacity: 0; transparent: true" class="intersectable"></a-entity>
-        <!-- Camera Rig & VR Controllers -->
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
+            <!-- Add sphere-collider, super-hands for both hands! -->
             <a-entity laser-controls="hand: right" super-hands sphere-collider="objects: .intersectable"></a-entity>
             <a-entity laser-controls="hand: left" super-hands sphere-collider="objects: .intersectable"></a-entity>
         </a-entity>
-        <!-- Desktop mouse support -->
-        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .intersectable"></a-entity>
+        <!-- Mouse cursor for desktop users (optional) -->
+        <a-entity id="cursor" cursor="rayOrigin: mouse" raycaster="objects: .intersectable"></a-entity>
     </a-scene>
     <script>
+        // Enable background music on first user click (browser policy fix)
+        window.addEventListener('click', function enableAudio() {
+            var audio = document.getElementById('bg-music');
+            if (audio && audio.paused) { audio.play(); window.removeEventListener('click', enableAudio); }
+        });
+
+        const sceneEl = document.querySelector('a-scene');
+        const modelEl = document.querySelector('#model');
         const cameraEl = document.querySelector('#cameraRig');
-        const storyOverlay = document.getElementById('storyOverlay');
+        const zoomButtons = document.querySelectorAll('.zoomButton');
         const backButton = document.getElementById('backButton');
-        // Store last camera position/quaternion to go "back"
+        const storyOverlay = document.getElementById('storyOverlay');
+        const clickableObjects = {};
+
         const defaultCameraPos = new THREE.Vector3(0, 4, 10);
         const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
-        // Target positions for zoom (tweak for your scene)
-        const meshTargets = {
-            'monitor': { pos: new THREE.Vector3(1.3, 1.3, -1.6), story: "💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward." },
-            'bed': { pos: new THREE.Vector3(0.1, 0.8, -3), story: "🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career." }
+        const zoomDistances = {
+            'Speaker_1': 3,
+            'Cube011_1': 4,
+            'default': 3.5
         };
-        function showStory(text) {
-            storyOverlay.innerHTML = text;
-            storyOverlay.style.display = "block";
+
+        function showStory(text) { storyOverlay.innerHTML = text; storyOverlay.style.display = "block"; }
+        function hideStory() { storyOverlay.style.display = "none"; }
+
+        function showStoryForMesh(meshName) {
+            if (!meshName) return;
+            const lower = meshName.toLowerCase();
+            if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
+                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+            } else if (lower.includes("monitor")) {
+                showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+            } else if (lower.includes("plant")) {
+                showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
+            } else if (lower.includes("rack")) {
+                showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
+            } else if (lower.includes("cylinder")) {
+                showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
+            } else if (lower.includes("speaker")) {
+                showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
+            } else if (lower.includes("cube011")) {
+                showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
+            } else if (lower.includes("cube")) {
+                showStory("🟪 <b>Cube Object</b><br>This is a generic cube in your scene.");
+            } else {
+                showStory("✨ <b>Something in My Room</b><br>This object is part of the story, but not a main scene highlight. Explore more!");
+            }
         }
-        function hideStory() {
-            storyOverlay.style.display = "none";
-        }
-        function focusOnObject(target) {
+
+        zoomButtons.forEach(button => { button.classList.remove('enabled'); });
+
+        // Add mesh-level interactivity using super-hands ("intersectable" class)
+        modelEl.addEventListener('model-loaded', () => {
+            const model = modelEl.getObject3D('mesh');
+            model.traverse(node => {
+                if (node.isMesh) {
+                    clickableObjects[node.name] = node;
+                    // For VR laser/sphere-collider detection, mark with 'intersectable'
+                    // Also add A-Frame event bridging for super-hands
+                    if (!node.el) node.el = modelEl;
+                    if (node.el.classList) node.el.classList.add('intersectable');
+                }
+            });
+
+            // Enable buttons after model is loaded
+            zoomButtons.forEach(button => { button.classList.add('enabled'); });
+
+            // Highlight mesh on hover (desktop and VR)
+            sceneEl.addEventListener('hover-start', function (evt) {
+                if (evt && evt.target && evt.target.classList)
+                    evt.target.classList.add('aframe-hovered');
+            });
+            sceneEl.addEventListener('hover-end', function (evt) {
+                if (evt && evt.target && evt.target.classList)
+                    evt.target.classList.remove('aframe-hovered');
+            });
+
+            // Listen for VR "grab-start" (controller trigger) and desktop "click" events on the entity
+            modelEl.addEventListener('grab-start', function (evt) {
+                // Find which mesh was hit
+                let meshName = evt.detail && evt.detail.target && evt.detail.target.object3D && evt.detail.target.object3D.name;
+                // Fallback for click events
+                if (!meshName && evt.detail && evt.detail.intersection && evt.detail.intersection.object)
+                    meshName = evt.detail.intersection.object.name;
+                if (!meshName) return;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+
+            // Also support click (desktop mouse)
+            modelEl.addEventListener('click', function (evt) {
+                let meshName = evt.detail && evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
+                if (!meshName) return;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+
+            // Initial story
+            setTimeout(() => {
+                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
+            }, 700);
+        });
+
+        // UI button click = camera jump & show story
+        zoomButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (!button.classList.contains('enabled')) return;
+                const meshName = button.dataset.target;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+        });
+
+        function focusOnObject(meshName) {
             const cam3D = cameraEl.object3D;
-            const obj = meshTargets[target];
-            if (!obj) return;
-            const center = obj.pos;
-            const newCameraPos = center.clone().add(new THREE.Vector3(0, 1.5, 2.5)); // Camera offset (edit for your model)
+            const targetMesh = clickableObjects[meshName];
+            if (!targetMesh) { alert("Object not found: " + meshName); return; }
+            const box = new THREE.Box3().setFromObject(targetMesh);
+            const center = box.getCenter(new THREE.Vector3());
+            let newCameraPos, lookAtTarget;
+            const lower = meshName.toLowerCase();
+            if (lower.includes('cylinder')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
+                lookAtTarget = center.clone();
+            }
+            else if (lower.includes('bed')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 8, 0));
+                lookAtTarget = center.clone();
+            }
+            else if (lower.includes('cube011')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 4));
+                lookAtTarget = center.clone();
+            }
+            else {
+                const direction = center.clone().sub(cam3D.position).normalize();
+                const zoomDistance = zoomDistances[meshName] || zoomDistances['default'];
+                newCameraPos = center.clone().add(direction.multiplyScalar(-zoomDistance));
+                lookAtTarget = center.clone();
+            }
+
             new TWEEN.Tween(cam3D.position)
-                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1200)
+                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
+
             const temp = { t: 0 };
             const startQuat = cam3D.quaternion.clone();
             const endQuat = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(newCameraPos, center, new THREE.Vector3(0, 1, 0))
+                new THREE.Matrix4().lookAt(newCameraPos, lookAtTarget, new THREE.Vector3(0, 1, 0))
             );
+
             new TWEEN.Tween(temp)
-                .to({ t: 1 }, 1200)
+                .to({ t: 1 }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .onUpdate(() => {
                     cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
                 })
                 .start();
+
             backButton.style.display = "block";
         }
-        // Click & grab handler for monitor
-        ['monitor-proxy', 'bed-proxy'].forEach(proxyId => {
-            const proxyEl = document.getElementById(proxyId);
-            const key = proxyId.replace('-proxy', '');
-            // For VR controllers (grab-start)
-            proxyEl.addEventListener('grab-start', () => {
-                focusOnObject(key);
-                showStory(meshTargets[key].story);
-            });
-            // For mouse click
-            proxyEl.addEventListener('click', () => {
-                focusOnObject(key);
-                showStory(meshTargets[key].story);
-            });
-            // Hover effect (optional)
-            proxyEl.addEventListener('hover-start', () => proxyEl.classList.add('aframe-hovered'));
-            proxyEl.addEventListener('hover-end', () => proxyEl.classList.remove('aframe-hovered'));
-        });
-        // Back button resets camera/story
+
         backButton.addEventListener('click', () => {
             const cam3D = cameraEl.object3D;
             new TWEEN.Tween(cam3D.position)
-                .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1200)
+                .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
             const temp = { t: 0 };
             const startQuat = cam3D.quaternion.clone();
             const endQuat = defaultCameraQuat.clone();
             new TWEEN.Tween(temp)
-                .to({ t: 1 }, 1200)
+                .to({ t: 1 }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .onUpdate(() => {
                     cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
@@ -165,12 +304,9 @@
             backButton.style.display = "none";
             hideStory();
         });
+
         function animate() { requestAnimationFrame(animate); TWEEN.update(); }
         animate();
-        // Optional: show intro story
-        setTimeout(() => {
-            showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
-        }, 600);
     </script>
 </body>
 
