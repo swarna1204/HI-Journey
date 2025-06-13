@@ -1,58 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8" />
-    <title>A-Frame VR Click Test (Modern)</title>
+    <meta charset="utf-8">
+    <title>A-Frame VR Guaranteed Click Test</title>
+    <meta name="description" content="A-Frame VR click test">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
         html,
         body {
-            margin: 0;
-            padding: 0;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
         }
 
-        #storyOverlay {
+        #output {
             position: fixed;
-            left: 0;
             top: 0;
+            left: 0;
             width: 100vw;
-            height: 100px;
-            background: red;
+            height: 80px;
+            z-index: 999;
+            background: #0a0;
             color: #fff;
-            padding: 2em;
+            text-align: center;
             font-size: 2em;
             display: none;
-            z-index: 99;
-            text-align: center;
         }
     </style>
 </head>
 
 <body>
-    <div id="storyOverlay"></div>
+    <div id="output"></div>
     <a-scene>
-        <a-box id="monitor-proxy" position="0 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"></a-box>
+        <a-box id="clickable" position="0 1.6 -3" width="1" height="1" depth="1" color="#4CC3D9">
+        </a-box>
         <a-camera position="0 1.6 0"></a-camera>
-        <!-- KEY: add cursor="rayOrigin: controller" to laser-controls! -->
+        <!-- THIS is all you need for Quest VR click -->
         <a-entity laser-controls="hand: right" cursor="rayOrigin: controller"></a-entity>
         <a-entity laser-controls="hand: left" cursor="rayOrigin: controller"></a-entity>
-        <!-- Optional: for desktop mouse -->
-        <a-entity cursor="rayOrigin: mouse"></a-entity>
     </a-scene>
     <script>
-        const storyOverlay = document.getElementById('storyOverlay');
-        function showStory(text) {
-            storyOverlay.innerHTML = text;
-            storyOverlay.style.display = 'block';
-            setTimeout(() => storyOverlay.style.display = 'none', 3000);
-            console.log('[showStory]', text);
-        }
-        document.querySelector('#monitor-proxy').addEventListener('click', (e) => {
-            showStory('Monitor Clicked! [click event]');
-            console.log('[click] event fired', e);
+        // Click listener
+        const output = document.getElementById('output');
+        document.getElementById('clickable').addEventListener('click', () => {
+            output.textContent = "You CLICKED the box! 🎉";
+            output.style.display = "block";
+            setTimeout(() => output.style.display = 'none', 2500);
+            console.log('Box was clicked (VR or mouse)');
         });
     </script>
 </body>
