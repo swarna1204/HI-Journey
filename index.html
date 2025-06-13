@@ -3,10 +3,8 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>A-Frame VR Controller Debug Test</title>
+    <title>A-Frame VR Simple Click Test</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/aframe-super-hands-component@6.0.4/dist/aframe-super-hands.min.js"></script>
     <style>
         html,
         body {
@@ -36,12 +34,11 @@
 <body>
     <div id="storyOverlay"></div>
     <a-scene>
-        <a-box id="monitor-proxy" position="0 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"
-            class="intersectable"></a-box>
+        <a-box id="monitor-proxy" position="0 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"></a-box>
         <a-camera position="0 1.6 0"></a-camera>
-        <a-entity laser-controls="hand: right" super-hands sphere-collider="objects: .intersectable"></a-entity>
-        <a-entity laser-controls="hand: left" super-hands sphere-collider="objects: .intersectable"></a-entity>
-        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .intersectable"></a-entity>
+        <a-entity laser-controls="hand: right"></a-entity>
+        <a-entity laser-controls="hand: left"></a-entity>
+        <a-entity cursor="rayOrigin: mouse"></a-entity>
     </a-scene>
     <script>
         const storyOverlay = document.getElementById('storyOverlay');
@@ -52,12 +49,9 @@
             console.log('[showStory]', text);
         }
         const box = document.querySelector('#monitor-proxy');
-        // Listen for all relevant events and log
-        ['grab-start', 'mousedown', 'mouseup', 'click', 'triggerdown', 'triggerup'].forEach(evtName => {
-            box.addEventListener(evtName, (e) => {
-                showStory('Event: ' + evtName);
-                console.log(`[${evtName}] event fired`, e);
-            });
+        box.addEventListener('click', (e) => {
+            showStory('Monitor Clicked! [click event]');
+            console.log('[click] event fired', e);
         });
     </script>
 </body>
