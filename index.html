@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>A-Frame VR Click Test</title>
+    <title>A-Frame VR Controller Debug Test</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script
         src="https://cdn.jsdelivr.net/npm/aframe-super-hands-component@6.0.4/dist/aframe-super-hands.min.js"></script>
@@ -18,16 +18,17 @@
 
         #storyOverlay {
             position: fixed;
-            left: 50%;
-            top: 20px;
-            transform: translateX(-50%);
-            background: #222;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100px;
+            background: red;
             color: #fff;
-            padding: 1em 2em;
-            border-radius: 16px;
-            font-size: 1.3em;
+            padding: 2em;
+            font-size: 2em;
             display: none;
             z-index: 99;
+            text-align: center;
         }
     </style>
 </head>
@@ -35,9 +36,7 @@
 <body>
     <div id="storyOverlay"></div>
     <a-scene>
-        <a-box id="monitor-proxy" position="-1 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"
-            class="intersectable"></a-box>
-        <a-box id="bed-proxy" position="1 0.5 -2" width="2" height="0.5" depth="1" color="#FFC65D"
+        <a-box id="monitor-proxy" position="0 1.25 -3" width="1" height="1" depth="1" color="#4CC3D9"
             class="intersectable"></a-box>
         <a-camera position="0 1.6 0"></a-camera>
         <a-entity laser-controls="hand: right" super-hands sphere-collider="objects: .intersectable"></a-entity>
@@ -45,24 +44,20 @@
         <a-entity cursor="rayOrigin: mouse" raycaster="objects: .intersectable"></a-entity>
     </a-scene>
     <script>
-        // Overlay logic
         const storyOverlay = document.getElementById('storyOverlay');
         function showStory(text) {
             storyOverlay.innerHTML = text;
             storyOverlay.style.display = 'block';
-            setTimeout(() => storyOverlay.style.display = 'none', 2500);
+            setTimeout(() => storyOverlay.style.display = 'none', 3000);
+            console.log('[showStory]', text);
         }
-        document.querySelector('#monitor-proxy').addEventListener('grab-start', () => {
-            showStory('Monitor Clicked!');
-        });
-        document.querySelector('#monitor-proxy').addEventListener('click', () => {
-            showStory('Monitor Clicked!');
-        });
-        document.querySelector('#bed-proxy').addEventListener('grab-start', () => {
-            showStory('Bed Clicked!');
-        });
-        document.querySelector('#bed-proxy').addEventListener('click', () => {
-            showStory('Bed Clicked!');
+        const box = document.querySelector('#monitor-proxy');
+        // Listen for all relevant events and log
+        ['grab-start', 'mousedown', 'mouseup', 'click', 'triggerdown', 'triggerup'].forEach(evtName => {
+            box.addEventListener(evtName, (e) => {
+                showStory('Event: ' + evtName);
+                console.log(`[${evtName}] event fired`, e);
+            });
         });
     </script>
 </body>
