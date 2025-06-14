@@ -2,68 +2,25 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>VR Debug Visible Scene</title>
-    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <meta charset="UTF-8" />
+    <title>A-Frame Cube Test</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
 <body>
-    <a-scene background="color: #ECECEC" xr-mode-ui="enabled: true" embedded>
-
-        <!-- Sky + Ground -->
-        <a-sky color="#87CEEB"></a-sky>
-        <a-plane rotation="-90 0 0" width="20" height="20" color="#7BC8A4" shadow></a-plane>
-
-        <!-- Test Box -->
-        <a-box class="clickable" position="0 1.5 -3" color="#FFC65D" depth="1" height="1" width="1" shadow>
-        </a-box>
-
-        <!-- Lighting -->
-        <a-entity light="type: directional; intensity: 1" position="3 5 1"></a-entity>
-
-        <!-- Camera + VR Controllers -->
-        <a-entity id="rig" position="0 1.6 0">
-            <a-camera>
-                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: black" position="0 0 -1"
-                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03">
-                </a-cursor>
-            </a-camera>
-
-            <!-- LEFT CONTROLLER -->
-            <a-entity id="leftHand" meta-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4" debug-vr-input debug-raycast>
-            </a-entity>
-
-            <!-- RIGHT CONTROLLER -->
-            <a-entity id="rightHand" meta-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081" debug-vr-input debug-raycast>
-            </a-entity>
+    <a-scene background="color: #222">
+        <!-- Camera is at (0, 1.6, 5) looking straight at the cube -->
+        <a-entity position="0 1.6 5">
+            <a-camera></a-camera>
         </a-entity>
+
+        <!-- Cube right in front of camera -->
+        <a-box position="0 1.6 0" color="orange" depth="1" height="1" width="1" shadow></a-box>
+
+        <!-- Lights -->
+        <a-entity light="type: ambient; intensity: 1.2"></a-entity>
+        <a-entity light="type: directional; intensity: 0.6" position="0 4 4"></a-entity>
     </a-scene>
-
-    <script>
-        AFRAME.registerComponent('debug-vr-input', {
-            init: function () {
-                const el = this.el;
-                el.addEventListener('triggerdown', evt => console.log('[VR] triggerdown', el.id, evt));
-                el.addEventListener('abuttondown', evt => console.log('[VR] abuttondown', el.id, evt));
-                el.addEventListener('bbuttondown', evt => console.log('[VR] bbuttondown', el.id, evt));
-                el.addEventListener('gripdown', evt => console.log('[VR] gripdown', el.id, evt));
-            }
-        });
-
-        AFRAME.registerComponent('debug-raycast', {
-            init: function () {
-                const el = this.el;
-                el.addEventListener('raycaster-intersection', evt => {
-                    console.log('[Raycaster] intersected from', el.id, evt.detail.els);
-                });
-                el.addEventListener('raycaster-intersection-cleared', evt => {
-                    console.log('[Raycaster] cleared from', el.id);
-                });
-            }
-        });
-    </script>
 </body>
 
 </html>
