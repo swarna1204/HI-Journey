@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Hyper Journey — Immersive Room VR</title>
+    <title>Hyper Journey — VR Logging Fixed</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
@@ -50,16 +50,16 @@
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
-        <!-- GLB Model -->
+        <!-- GLB model -->
         <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
 
-        <!-- Fallback test box -->
-        <a-box position="0 1.5 -3" color="tomato" class="clickable" id="test-box"></a-box>
+        <!-- Fallback test object -->
+        <a-box id="test-box" position="0 1.5 -3" color="tomato" class="clickable"></a-box>
 
-        <!-- Camera Rig -->
+        <!-- Camera + Hand Controllers -->
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera id="mainCamera" look-controls wasd-controls>
-                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: white"
+                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1"></a-cursor>
             </a-camera>
 
@@ -149,7 +149,7 @@
                 }
             });
 
-            // Refresh raycaster objects after model loads
+            // Refresh raycaster after model loads
             setTimeout(() => {
                 document.querySelectorAll('[raycaster]').forEach(el => {
                     if (el.components.raycaster) {
@@ -167,18 +167,25 @@
     </script>
 
     <script>
-        // Replace with your Webhook.site link
-        const webhookUrl = '	https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f';
+        // ✅ Replace this with your real Webhook.site link
+        const webhookUrl = 'https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f';
 
         AFRAME.registerComponent('webhook-logger', {
             init: function () {
                 const el = this.el;
                 function sendLog(msg) {
-                    fetch(webhookUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ log: msg, source: el.id || 'controller' })
-                    }).catch(() => { });
+                    try {
+                        fetch(webhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                log: msg,
+                                source: el.id || 'controller'
+                            })
+                        });
+                    } catch (e) {
+                        console.warn('Webhook send failed', e);
+                    }
                 }
 
                 el.addEventListener('buttondown', () => {
