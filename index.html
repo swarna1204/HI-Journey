@@ -1,64 +1,197 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>VR Webhook Logging Test</title>
+    <meta charset="UTF-8" />
+    <title>Hyper Journey — Immersive Room VR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        #storyOverlay {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 110px;
+            transform: translateX(-50%);
+            background: rgba(34, 40, 49, 0.95);
+            color: #fff;
+            font-size: 1.5rem;
+            max-width: 80vw;
+            padding: 1.3rem 2.3rem;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px #111a;
+            z-index: 99999;
+            text-align: center;
+            letter-spacing: 0.03em;
+            pointer-events: none;
+        }
+    </style>
 </head>
 
 <body>
-    <a-scene background="color: #111" xr-mode-ui="enabled: true">
-        <!-- Test Box -->
-        <a-box id="target-box" class="clickable" position="0 1.5 -3" color="red"></a-box>
+    <div id="storyOverlay"></div>
 
-        <!-- Camera + Controllers -->
-        <a-entity position="0 1.6 0">
-            <a-camera>
-                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
+    <a-scene xr-mode-ui="enabled: true" renderer="antialias: true">
+        <a-assets>
+            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- Lights -->
+        <a-sky color="#222831"></a-sky>
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
+
+        <!-- GLB Model -->
+        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+
+        <!-- Camera + VR Controller Rig -->
+        <a-entity id="cameraRig" position="0 4 10">
+            <a-camera id="mainCamera" look-controls wasd-controls>
+                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: white"
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1"></a-cursor>
             </a-camera>
 
             <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081" webhook-logger>
-            </a-entity>
+                line="color: #FF4081" webhook-logger></a-entity>
 
             <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4" webhook-logger>
-            </a-entity>
+                line="color: #00BCD4" webhook-logger></a-entity>
         </a-entity>
     </a-scene>
 
     <script>
+        const storyOverlay = document.getElementById('storyOverlay');
+        const cameraRig = document.getElementById('cameraRig');
+        const modelEl = document.getElementById('model');
+        const clickableObjects = {};
+        const defaultCameraPos = new THREE.Vector3(0, 4, 10);
+        const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+
+        function showStory(text) {
+            storyOverlay.innerHTML = text;
+            storyOverlay.style.display = "block";
+        }
+
+        function hideStory() {
+            storyOverlay.style.display = "none";
+        }
+
+        function showStoryForMesh(meshName) {
+            if (!meshName) return;
+            const lower = meshName.toLowerCase();
+            if (lower.includes("bed")) {
+                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+            } else if (lower.includes("monitor")) {
+                showStory("💻 <b>The Monitor</b><br>Late nights learning, coding, and applying for jobs.");
+            } else if (lower.includes("plant")) {
+                showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city.");
+            } else if (lower.includes("rack")) {
+                showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and inspiration.");
+            } else if (lower.includes("cylinder")) {
+                showStory("🖼️ <b>The Wall Frame</b><br>Moments of growth and reminders to keep going.");
+            } else if (lower.includes("speaker")) {
+                showStory("🔊 <b>The Speaker</b><br>Music and podcasts kept me strong.");
+            } else if (lower.includes("cube011")) {
+                showStory("💡 <b>The Light</b><br>Hope, direction, and a brighter path.");
+            } else {
+                showStory("✨ <b>Part of My Room</b><br>Click more to reveal different stories.");
+            }
+        }
+
+        function focusOnObject(meshName) {
+            const cam3D = cameraRig.object3D;
+            const targetMesh = clickableObjects[meshName];
+            if (!targetMesh) return;
+
+            const box = new THREE.Box3().setFromObject(targetMesh);
+            const center = box.getCenter(new THREE.Vector3());
+            let newCameraPos;
+            const direction = center.clone().sub(cam3D.position).normalize();
+            newCameraPos = center.clone().add(direction.multiplyScalar(-3.5));
+
+            new TWEEN.Tween(cam3D.position)
+                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1200)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+
+            const temp = { t: 0 };
+            const startQuat = cam3D.quaternion.clone();
+            const endQuat = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(newCameraPos, center, new THREE.Vector3(0, 1, 0))
+            );
+
+            new TWEEN.Tween(temp)
+                .to({ t: 1 }, 1200)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate(() => {
+                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
+                })
+                .start();
+        }
+
+        // When model is loaded, track clickable meshes
+        modelEl.addEventListener('model-loaded', () => {
+            const model = modelEl.getObject3D('mesh');
+            model.traverse(node => {
+                if (node.isMesh) {
+                    clickableObjects[node.name] = node;
+                }
+            });
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+        }
+        animate();
+    </script>
+
+    <script>
+        // Replace with your real Webhook.site URL:
+        const webhookUrl = 'https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f';
+
         AFRAME.registerComponent('webhook-logger', {
             init: function () {
                 const el = this.el;
-                const webhookUrl = 'https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f'; // replace below
 
-                function sendLog(message) {
+                function sendLog(msg) {
                     fetch(webhookUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ log: message, source: el.id || 'unknown' })
+                        body: JSON.stringify({ log: msg, source: el.id || 'controller' })
                     }).catch(() => { });
                 }
 
                 el.addEventListener('buttondown', () => {
                     const hit = el.components.raycaster.intersectedEl;
-                    if (hit) {
-                        sendLog(`✅ HIT: ${hit.id || hit.tagName || hit.className}`);
+                    if (hit && hit.object3D && hit.object3D.name) {
+                        const name = hit.object3D.name;
+                        sendLog(`✅ HIT: ${name}`);
+                        focusOnObject(name);
+                        showStoryForMesh(name);
                     } else {
-                        sendLog(`❌ Button pressed, but no intersectedEl`);
+                        sendLog('❌ Button pressed, but no intersectedEl');
                     }
                 });
 
                 el.addEventListener('raycaster-intersection', (e) => {
-                    const seen = e.detail.els.map(el => el.id || el.tagName || '[unknown]');
-                    sendLog(`🎯 Raycaster seeing: ${seen.join(', ')}`);
+                    const names = e.detail.els.map(el => el.id || el.tagName || '[unknown]');
+                    sendLog(`🎯 Raycaster seeing: ${names.join(', ')}`);
                 });
 
                 el.addEventListener('raycaster-intersection-cleared', () => {
-                    sendLog(`⚪ Raycaster cleared from: ${el.id}`);
+                    sendLog(`⚪ Raycaster cleared from ${el.id}`);
                 });
             }
         });
