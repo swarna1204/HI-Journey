@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>VR Controller Visibility + Laser Test</title>
+    <title>VR Controller Final Test</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
@@ -13,28 +13,28 @@
         <!-- Ground -->
         <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#444"></a-plane>
 
-        <!-- Red Box to point at -->
-        <a-box position="0 1.5 -3" color="red" class="clickable" id="target-box"></a-box>
+        <!-- Red Box to interact with -->
+        <a-box id="target-box" class="clickable" position="0 1.5 -3" color="red"></a-box>
 
-        <!-- Lights -->
+        <!-- Lighting -->
         <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
         <a-entity light="type: ambient; intensity: 0.6"></a-entity>
 
         <!-- Camera Rig -->
         <a-entity id="rig" position="0 1.6 0">
             <a-camera>
-                <!-- Desktop cursor support -->
+                <!-- For desktop support -->
                 <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1">
                 </a-cursor>
             </a-camera>
 
-            <!-- Right Hand Controller with visible model -->
+            <!-- Right Controller -->
             <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
                 line="color: #FF4081" vr-button-click-logger>
             </a-entity>
 
-            <!-- Left Hand Controller -->
+            <!-- Left Controller -->
             <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
                 line="color: #00BCD4" vr-button-click-logger>
             </a-entity>
@@ -46,7 +46,6 @@
             init: function () {
                 const el = this.el;
 
-                // Logs what the ray is intersecting
                 el.addEventListener('raycaster-intersection', function (e) {
                     console.log('🎯 Raycaster seeing:', e.detail.els.map(el => el.id || el.tagName));
                 });
@@ -55,15 +54,12 @@
                     console.log('⚪ Raycaster cleared from:', el.id);
                 });
 
-                // Logs when controller button is pressed
                 el.addEventListener('buttondown', function () {
-                    const raycaster = el.components.raycaster;
-                    const intersects = raycaster ? raycaster.intersections : [];
-                    if (intersects.length > 0) {
-                        const hitObj = intersects[0].object;
-                        console.log('✅ Controller Button HIT:', hitObj.name || hitObj.el);
+                    const intersectedEl = el.components.raycaster.intersectedEl;
+                    if (intersectedEl) {
+                        console.log('✅ HIT:', intersectedEl.id || intersectedEl.tagName || intersectedEl.className);
                     } else {
-                        console.log('❌ Button pressed, but no intersection');
+                        console.log('❌ Button pressed, but no intersectedEl');
                     }
                 });
             }
