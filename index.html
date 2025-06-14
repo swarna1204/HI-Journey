@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Hyper Island Journey — VR & Desktop Interaction</title>
+    <title>Hyper Island Journey – VR + Desktop Interaction</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
@@ -40,7 +40,6 @@
             cursor: pointer;
             z-index: 1000;
             display: none;
-            pointer-events: auto;
         }
 
         .zoomButton {
@@ -53,7 +52,6 @@
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             opacity: 0.5;
-            pointer-events: auto;
         }
 
         .zoomButton.enabled {
@@ -94,16 +92,15 @@
 
     <div id="backButton">Back</div>
     <div id="storyOverlay"></div>
-    <audio id="bg-music" src="audio/musicbg.mp3" loop></audio>
 
-    <a-scene id="scene" renderer="antialias: true; precision: high;" xr-mode-ui="enabled: true">
-        <a-sky color="#222831"></a-sky>
-        <a-entity light="type: ambient; intensity: 1"></a-entity>
-        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
-
+    <a-scene renderer="antialias: true; precision: high;" xr-mode-ui="enabled: true">
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
+
+        <a-sky color="#222831"></a-sky>
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
         <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
 
@@ -113,21 +110,31 @@
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1"></a-cursor>
             </a-camera>
 
-            <!-- VR Controllers -->
-            <a-entity id="leftHand" meta-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4; opacity: 0.8"></a-entity>
+            <a-entity id="leftHand" meta-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true;"
+                line="color: #00BCD4" vr-click-listener></a-entity>
 
-            <a-entity id="rightHand" meta-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081; opacity: 0.8"></a-entity>
+            <a-entity id="rightHand" meta-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true;"
+                line="color: #FF4081" vr-click-listener></a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        window.addEventListener('click', function enableAudio() {
-            const audio = document.getElementById('bg-music');
-            if (audio && audio.paused) {
-                audio.play();
-                window.removeEventListener('click', enableAudio);
+        // Manual VR trigger + raycast detection
+        AFRAME.registerComponent('vr-click-listener', {
+            init: function () {
+                this.el.addEventListener('triggerdown', () => {
+                    const raycaster = this.el.components.raycaster;
+                    if (!raycaster) return;
+                    const intersects = raycaster.intersections;
+                    if (intersects.length > 0) {
+                        const meshName = intersects[0].object.name;
+                        console.log('VR trigger hit:', meshName);
+                        if (meshName) {
+                            focusOnObject(meshName);
+                            showStoryForMesh(meshName);
+                        }
+                    }
+                });
             }
         });
 
@@ -152,6 +159,7 @@
             storyOverlay.innerHTML = text;
             storyOverlay.style.display = "block";
         }
+
         function hideStory() {
             storyOverlay.style.display = "none";
         }
@@ -177,55 +185,6 @@
                 showStory("✨ <b>Something in My Room</b><br>This object is part of the story.");
             }
         }
-
-        zoomButtons.forEach(button => button.classList.remove('enabled'));
-
-        modelEl.addEventListener('model-loaded', () => {
-            const model = modelEl.getObject3D('mesh');
-            model.traverse(node => {
-                if (node.isMesh) {
-                    clickableObjects[node.name] = node;
-                    node.userData.clickable = true;
-                }
-            });
-            zoomButtons.forEach(button => button.classList.add('enabled'));
-
-            setTimeout(() => {
-                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here.</span>");
-            }, 700);
-
-            // Refresh all raycasters after model loads
-            document.querySelectorAll('[raycaster]').forEach(el => {
-                if (el.components.raycaster) {
-                    el.components.raycaster.refreshObjects();
-                }
-            });
-        });
-
-        zoomButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                if (!button.classList.contains('enabled')) return;
-                const meshName = button.dataset.target;
-                focusOnObject(meshName);
-                showStoryForMesh(meshName);
-            });
-        });
-
-        modelEl.addEventListener('click', function (evt) {
-            const meshName = evt.detail?.intersection?.object?.name;
-            if (!meshName) return;
-            focusOnObject(meshName);
-            showStoryForMesh(meshName);
-        });
-
-        sceneEl.addEventListener('click', (e) => {
-            if (e.target.closest('#buttons, #backButton')) return;
-            const intersection = sceneEl.components.raycaster?.getIntersection(modelEl);
-            if (!intersection) return;
-            const clickedName = intersection.object.name;
-            focusOnObject(clickedName);
-            showStoryForMesh(clickedName);
-        });
 
         function focusOnObject(meshName) {
             const cam3D = cameraEl.object3D;
@@ -283,6 +242,7 @@
             const temp = { t: 0 };
             const startQuat = cam3D.quaternion.clone();
             const endQuat = defaultCameraQuat.clone();
+
             new TWEEN.Tween(temp)
                 .to({ t: 1 }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
@@ -293,6 +253,47 @@
 
             backButton.style.display = "none";
             hideStory();
+        });
+
+        modelEl.addEventListener('model-loaded', () => {
+            const model = modelEl.getObject3D('mesh');
+            model.traverse(node => {
+                if (node.isMesh) {
+                    clickableObjects[node.name] = node;
+                }
+            });
+
+            zoomButtons.forEach(btn => btn.classList.add('enabled'));
+
+            // Optional intro text
+            setTimeout(() => {
+                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here.</span>");
+            }, 800);
+        });
+
+        zoomButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const meshName = button.dataset.target;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+        });
+
+        modelEl.addEventListener('click', function (evt) {
+            const meshName = evt.detail?.intersection?.object?.name;
+            if (meshName) {
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            }
+        });
+
+        sceneEl.addEventListener('click', (e) => {
+            if (e.target.closest('#buttons, #backButton')) return;
+            const intersection = sceneEl.components.raycaster?.getIntersection(modelEl);
+            if (!intersection) return;
+            const clickedName = intersection.object.name;
+            focusOnObject(clickedName);
+            showStoryForMesh(clickedName);
         });
 
         function animate() { requestAnimationFrame(animate); TWEEN.update(); }
