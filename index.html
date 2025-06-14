@@ -97,130 +97,148 @@
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Your Room Model -->
-        <a-entity id="model" gltf-model="#roomModel" class="clickable" position="-5 -10 -5" scale="10 10 10">
+        <!-- Room Model -->
+        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10">
         </a-entity>
 
-        <!-- Camera + Controllers -->
+        <!-- Camera & Controllers -->
         <a-entity id="cameraRig" position="0 4 10">
-            <a-camera raycaster="objects: .clickable" cursor="rayOrigin: mouse" look-controls wasd-controls>
-                <a-cursor position="0 0 -1" geometry="primitive: ring; radiusInner:0.02; radiusOuter:0.03"
-                    material="color: white; shader: flat">
-                </a-cursor>
-            </a-camera>
+            <a-camera look-controls wasd-controls></a-camera>
 
-            <a-entity id="leftHand" laser-controls="hand: left" cursor="rayOrigin: entity; fuse: false"
-                raycaster="objects: .clickable; far: 20" line="color: red; opacity: 0.8">
+            <!-- Left Hand -->
+            <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable; far: 20">
             </a-entity>
 
-            <a-entity id="rightHand" laser-controls="hand: right" cursor="rayOrigin: entity; fuse: false"
-                raycaster="objects: .clickable; far: 20" line="color: red; opacity: 0.8">
+            <!-- Right Hand -->
+            <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable; far: 20">
             </a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // Play music once
+        // Play background music on first click
         window.addEventListener('click', function once() {
             const a = document.getElementById('bg-music');
             if (a.paused) { a.play(); window.removeEventListener('click', once); }
         });
 
-        const modelEl = document.getElementById('model');
+        const sceneEl = document.querySelector('a-scene');
+        const modelEl = document.querySelector('#model');
+        const leftHand = document.querySelector('#leftHand');
+        const rightHand = document.querySelector('#rightHand');
         const zoomButtons = document.querySelectorAll('.zoomButton');
         const storyOverlay = document.getElementById('storyOverlay');
         const backButton = document.getElementById('backButton');
-        const cameraRig3D = document.getElementById('cameraRig').object3D;
+        const camRig3D = document.querySelector('#cameraRig').object3D;
         const defaultPos = new THREE.Vector3(0, 4, 10);
         const defaultQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
 
+        // Show/hide story overlay
         function showStory(html) {
             storyOverlay.innerHTML = html;
             storyOverlay.style.display = 'block';
         }
-        function hideStory() { storyOverlay.style.display = 'none'; }
-
-        function handleMeshClick(name) {
-            showStoryForMesh(name);
-            focusOn(name);
+        function hideStory() {
+            storyOverlay.style.display = 'none';
         }
-        function showStoryForMesh(name) {
+
+        // Determine story text
+        function showStoryFor(name) {
             const l = name.toLowerCase();
-            if (l.includes('bed')) {
-                showStory('🛏️ <b>The Bed</b><br>Balancing motherhood and ambition…');
-            } else if (l.includes('monitor')) {
-                showStory('💻 <b>The Monitor</b><br>Late‐night coding sessions…');
-            } else if (l.includes('plant')) {
-                showStory('🪴 <b>The Plant</b><br>Roots take time to grow.');
-            } else {
-                showStory('✨ <b>Discovery</b><br>Every object holds a story.');
-            }
+            if (l.includes('bed')) return showStory('🛏️ <b>The Bed</b><br>Balancing motherhood & ambition.');
+            if (l.includes('monitor')) return showStory('💻 <b>The Monitor</b><br>Late-night coding.');
+            if (l.includes('plant')) return showStory('🪴 <b>The Plant</b><br>Roots take time.');
+            return showStory('✨ <b>Discovery</b><br>Every object holds a story.');
         }
-        function focusOn(name) {
-            // find mesh by name
-            const threeMesh = modelEl.getObject3D('mesh').getObjectByName(name);
-            if (!threeMesh) return;
-            const box = new THREE.Box3().setFromObject(threeMesh);
-            const ctr = box.getCenter(new THREE.Vector3());
-            const newPos = ctr.clone().add(new THREE.Vector3(0, 2, 5));
 
-            new TWEEN.Tween(cameraRig3D.position)
-                .to({ x: newPos.x, y: newPos.y, z: newPos.z }, 1200)
+        // Camera focus tween
+        function focusOn(name) {
+            const mesh = modelEl.getObject3D('mesh').getObjectByName(name);
+            if (!mesh) return;
+            const box = new THREE.Box3().setFromObject(mesh);
+            const ctr = box.getCenter(new THREE.Vector3());
+            const pos = ctr.clone().add(new THREE.Vector3(0, 2, 5));
+
+            new TWEEN.Tween(camRig3D.position)
+                .to({ x: pos.x, y: pos.y, z: pos.z }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
 
-            const tmp = { t: 0 }, startQ = cameraRig3D.quaternion.clone();
+            const tmp = { t: 0 };
+            const startQ = camRig3D.quaternion.clone();
             const endQ = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(newPos, ctr, new THREE.Vector3(0, 1, 0))
+                new THREE.Matrix4().lookAt(pos, ctr, new THREE.Vector3(0, 1, 0))
             );
+
             new TWEEN.Tween(tmp)
                 .to({ t: 1 }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => cameraRig3D.quaternion.copy(startQ).slerp(endQ, tmp.t))
+                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(endQ, tmp.t))
                 .start();
 
             backButton.style.display = 'block';
         }
 
-        modelEl.addEventListener('model-loaded', () => {
-            // enable UI
-            zoomButtons.forEach(b => b.classList.add('enabled'));
-            // initial story
-            setTimeout(() => {
-                showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.');
-            }, 700);
-            // catch clicks on any mesh
-            modelEl.addEventListener('click', evt => {
-                const inter = evt.detail.intersection;
-                if (inter && inter.object && inter.object.name) {
-                    handleMeshClick(inter.object.name);
-                }
-            });
-        });
+        // Unified click handler
+        function handleSelection(name) {
+            showStoryFor(name);
+            focusOn(name);
+        }
 
+        // Manual raycast on trigger
+        function setupControllerRaycast(handEl) {
+            handEl.addEventListener('triggerdown', () => {
+                const rc = handEl.components.raycaster;
+                if (!rc) return;
+                const ints = rc.intersections;
+                if (ints.length === 0) return;
+                // pick first intersection on our model
+                const hit = ints.find(i => i.object && i.object.name);
+                if (hit) handleSelection(hit.object.name);
+            });
+        }
+
+        // UI button handler
         zoomButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 if (!btn.classList.contains('enabled')) return;
-                handleMeshClick(btn.dataset.target);
+                handleSelection(btn.dataset.target);
             });
         });
 
+        // Back button
         backButton.addEventListener('click', () => {
-            new TWEEN.Tween(cameraRig3D.position)
+            new TWEEN.Tween(camRig3D.position)
                 .to({ x: defaultPos.x, y: defaultPos.y, z: defaultPos.z }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
-            const tmp = { t: 0 }, startQ = cameraRig3D.quaternion.clone();
+            const tmp = { t: 0 }, startQ = camRig3D.quaternion.clone();
             new TWEEN.Tween(tmp)
                 .to({ t: 1 }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => cameraRig3D.quaternion.copy(startQ).slerp(defaultQuat, tmp.t))
+                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(defaultQuat, tmp.t))
                 .start();
             hideStory();
             backButton.style.display = 'none';
         });
 
-        (function animate() { requestAnimationFrame(animate); TWEEN.update(); })();
+        // Once model is loaded, enable UI and set up controllers
+        modelEl.addEventListener('model-loaded', () => {
+            zoomButtons.forEach(b => b.classList.add('enabled'));
+            // initial intro
+            setTimeout(() => {
+                showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.');
+            }, 700);
+            // attach manual raycast
+            setupControllerRaycast(leftHand);
+            setupControllerRaycast(rightHand);
+        });
+
+        // Animation loop
+        (function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+        })();
     </script>
 </body>
 
