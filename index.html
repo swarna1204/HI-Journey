@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Hyper Island Journey — Trigger-Zone Interaction</title>
+    <title>Hyper Island Journey — Clickable Proxies</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
@@ -15,43 +15,6 @@
             height: 100%;
             overflow: hidden;
             font-family: Arial;
-        }
-
-        #buttons {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .zoomButton {
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            color: #222831;
-            opacity: 0.5;
-            cursor: pointer;
-        }
-
-        .zoomButton.enabled {
-            opacity: 1;
-        }
-
-        #backButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            display: none;
-            z-index: 1000;
         }
 
         #storyOverlay {
@@ -70,47 +33,36 @@
             text-align: center;
             z-index: 99999;
         }
+
+        #backButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+        }
     </style>
 </head>
 
 <body>
 
-    <!-- UI for manual testing -->
-    <div id="buttons">
-        <div class="zoomButton" data-target="monitor001_3">Monitor</div>
-        <div class="zoomButton" data-target="bed">Bed</div>
-        <div class="zoomButton" data-target="houseplant_1">Plant</div>
-        <div class="zoomButton" data-target="Rack001_1">YT Frame</div>
-        <div class="zoomButton" data-target="Cylinder001">Wall Frame</div>
-        <div class="zoomButton" data-target="Speaker_1">Speaker</div>
-        <div class="zoomButton" data-target="Cube011_1">Light</div>
-    </div>
-    <div id="backButton">Back</div>
     <div id="storyOverlay"></div>
+    <div id="backButton">Back</div>
     <audio id="bg-music" src="audio/musicbg.mp3" loop></audio>
 
-    <!-- trigger-zone component -->
+    <!-- Helper component: listen for click events -->
     <script>
-        AFRAME.registerComponent('trigger-zone', {
-            schema: { radius: { type: 'number', default: 1 } },
+        AFRAME.registerComponent('cursor-listener', {
             init: function () {
-                this.cameraEl = document.querySelector('[camera]');
-                this.inside = false;
-            },
-            tick: function () {
-                const triggerPos = new THREE.Vector3();
-                const camPos = new THREE.Vector3();
-                this.el.object3D.getWorldPosition(triggerPos);
-                this.cameraEl.object3D.getWorldPosition(camPos);
-                const dist = triggerPos.distanceTo(camPos);
-                if (dist < this.data.radius && !this.inside) {
-                    this.inside = true;
-                    const meshName = this.el.getAttribute('data-mesh-name');
-                    window.handleMeshClick(meshName);
-                } else if (dist >= this.data.radius && this.inside) {
-                    this.inside = false;
-                    // can hook exit logic here if desired
-                }
+                this.el.addEventListener('click', evt => {
+                    const name = this.el.getAttribute('data-mesh-name');
+                    if (name) window.handleMeshClick(name);
+                });
             }
         });
     </script>
@@ -124,33 +76,45 @@
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Your room GLB -->
-        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10">
-        </a-entity>
+        <!-- Your GLB model -->
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
 
-        <!-- Camera Rig -->
+        <!-- Camera + VR controllers with cursor support -->
         <a-entity id="cameraRig" position="0 4 10">
-            <a-camera look-controls wasd-controls></a-camera>
+            <a-camera look-controls wasd-controls>
+                <!-- desktop cursor -->
+                <a-cursor geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                    material="color: white; shader: flat">
+                </a-cursor>
+            </a-camera>
+
+            <!-- left hand -->
+            <a-entity laser-controls="hand: left" cursor="rayOrigin: entity; fuse: false"
+                raycaster="objects: .clickable; far: 30">
+            </a-entity>
+
+            <!-- right hand -->
+            <a-entity laser-controls="hand: right" cursor="rayOrigin: entity; fuse: false"
+                raycaster="objects: .clickable; far: 30">
+            </a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // References
         const modelEl = document.getElementById('model');
-        const zoomButtons = document.querySelectorAll('.zoomButton');
-        const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
-        const cameraRig3D = document.getElementById('cameraRig').object3D;
+        const backButton = document.getElementById('backButton');
+        const camRig3D = document.getElementById('cameraRig').object3D;
         const defaultPos = new THREE.Vector3(0, 4, 10);
         const defaultQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
 
-        // Play music on first click
+        // Play music once
         window.addEventListener('click', function once() {
             const a = document.getElementById('bg-music');
             if (a.paused) { a.play(); window.removeEventListener('click', once); }
         });
 
-        // Show/hide story overlay
+        // Show/hide story
         function showStory(html) {
             storyOverlay.innerHTML = html;
             storyOverlay.style.display = 'block';
@@ -159,13 +123,13 @@
             storyOverlay.style.display = 'none';
         }
 
-        // Choose story text based on mesh name
+        // Story text mapping
         function showStoryForMesh(name) {
             const l = name.toLowerCase();
             if (l.includes('bed')) {
-                showStory('🛏️ <b>The Bed</b><br>Balancing motherhood and ambition…');
+                showStory('🛏️ <b>The Bed</b><br>Balancing motherhood & ambition…');
             } else if (l.includes('monitor')) {
-                showStory('💻 <b>The Monitor</b><br>Late-night coding sessions…');
+                showStory('💻 <b>The Monitor</b><br>Late-night coding…');
             } else if (l.includes('plant')) {
                 showStory('🪴 <b>The Plant</b><br>Roots take time to grow.');
             } else {
@@ -173,95 +137,89 @@
             }
         }
 
-        // Camera fly-to tween
+        // Camera tween
         function focusOnObject(name) {
             const mesh = modelEl.getObject3D('mesh').getObjectByName(name);
             if (!mesh) return;
             const box = new THREE.Box3().setFromObject(mesh);
             const ctr = box.getCenter(new THREE.Vector3());
-            const newPos = ctr.clone().add(new THREE.Vector3(0, 2, 5));
+            const pos = ctr.clone().add(new THREE.Vector3(0, 2, 5));
 
-            new TWEEN.Tween(cameraRig3D.position)
-                .to({ x: newPos.x, y: newPos.y, z: newPos.z }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .start();
+            new TWEEN.Tween(camRig3D.position)
+                .to({ x: pos.x, y: pos.y, z: pos.z }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out).start();
 
             const tmp = { t: 0 };
-            const startQ = cameraRig3D.quaternion.clone();
+            const startQ = camRig3D.quaternion.clone();
             const endQ = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(newPos, ctr, new THREE.Vector3(0, 1, 0))
+                new THREE.Matrix4().lookAt(pos, ctr, new THREE.Vector3(0, 1, 0))
             );
             new TWEEN.Tween(tmp)
-                .to({ t: 1 }, 1200)
+                .to({ t: 1 }, 1000)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => cameraRig3D.quaternion.copy(startQ).slerp(endQ, tmp.t))
+                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(endQ, tmp.t))
                 .start();
 
             backButton.style.display = 'block';
         }
 
         // Central handler
-        window.handleMeshClick = function (meshName) {
-            showStoryForMesh(meshName);
-            focusOnObject(meshName);
+        window.handleMeshClick = function (name) {
+            showStoryForMesh(name);
+            focusOnObject(name);
         };
 
-        // Create trigger volumes around each mesh
+        // Once model loads, create invisible proxies
         modelEl.addEventListener('model-loaded', () => {
             const threeMesh = modelEl.getObject3D('mesh');
             threeMesh.updateMatrixWorld(true);
+
             threeMesh.traverse(node => {
                 if (node.isMesh && node.name) {
-                    const box3 = new THREE.Box3().setFromObject(node);
-                    const size = box3.getSize(new THREE.Vector3());
-                    const center = box3.getCenter(new THREE.Vector3());
-                    // radius = ~60% of largest dimension
-                    const radius = Math.max(size.x, size.y, size.z) * 0.6;
-                    // create invisible box
-                    const trigger = document.createElement('a-box');
-                    trigger.setAttribute('width', size.x);
-                    trigger.setAttribute('height', size.y);
-                    trigger.setAttribute('depth', size.z);
-                    trigger.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
-                    trigger.setAttribute('visible', 'false');
-                    trigger.setAttribute('data-mesh-name', node.name);
-                    trigger.setAttribute('trigger-zone', `radius: ${radius}`);
-                    document.querySelector('a-scene').appendChild(trigger);
+                    const box = new THREE.Box3().setFromObject(node);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+
+                    const proxy = document.createElement('a-entity');
+                    proxy.setAttribute('geometry', `
+            primitive: box;
+            width: ${size.x};
+            height: ${size.y};
+            depth: ${size.z}`);
+                    proxy.setAttribute('material', 'opacity: 0; transparent: true');
+                    proxy.setAttribute('class', 'clickable');
+                    proxy.setAttribute('cursor-listener', '');
+                    proxy.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
+                    proxy.setAttribute('data-mesh-name', node.name);
+
+                    document.querySelector('a-scene').appendChild(proxy);
                 }
             });
-            // enable manual UI
-            zoomButtons.forEach(b => b.classList.add('enabled'));
-            // initial intro
+
+            // initial prompt
             setTimeout(() => {
                 showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.');
             }, 700);
-
-            // Manual button fallback
-            zoomButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (!btn.classList.contains('enabled')) return;
-                    window.handleMeshClick(btn.dataset.target);
-                });
-            });
         });
 
         // Back button resets camera & hides story
         backButton.addEventListener('click', () => {
-            new TWEEN.Tween(cameraRig3D.position)
-                .to({ x: defaultPos.x, y: defaultPos.y, z: defaultPos.z }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .start();
-            const tmp = { t: 0 }, startQ = cameraRig3D.quaternion.clone();
+            new TWEEN.Tween(camRig3D.position)
+                .to({ x: defaultPos.x, y: defaultPos.y, z: defaultPos.z }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out).start();
+
+            const tmp = { t: 0 }, startQ = camRig3D.quaternion.clone();
             new TWEEN.Tween(tmp)
-                .to({ t: 1 }, 1200)
+                .to({ t: 1 }, 1000)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => cameraRig3D.quaternion.copy(startQ).slerp(defaultQuat, tmp.t))
+                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(defaultQuat, tmp.t))
                 .start();
+
             hideStory();
             backButton.style.display = 'none';
         });
 
-        // Animate loop for TWEEN
+        // animate loop
         (function animate() {
             requestAnimationFrame(animate);
             TWEEN.update();
