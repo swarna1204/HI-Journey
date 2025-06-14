@@ -1,214 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Hyper Journey — VR Logging Fixed</title>
+    <meta charset="utf-8">
+    <title>Scene 1 — The Seed</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-    <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-
-        #storyOverlay {
-            display: none;
-            position: fixed;
-            left: 50%;
-            top: 110px;
-            transform: translateX(-50%);
-            background: rgba(34, 40, 49, 0.95);
-            color: #fff;
-            font-size: 1.5rem;
-            max-width: 80vw;
-            padding: 1.3rem 2.3rem;
-            border-radius: 18px;
-            box-shadow: 0 4px 32px #111a;
-            z-index: 99999;
-            text-align: center;
-            letter-spacing: 0.03em;
-            pointer-events: none;
-        }
-    </style>
 </head>
 
 <body>
-    <div id="storyOverlay"></div>
+    <a-scene background="color: #111">
+        <!-- Soil -->
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="20" height="20" color="#4b3d2a"></a-plane>
 
-    <a-scene xr-mode-ui="enabled: true" renderer="antialias: true">
-        <a-assets>
-            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
-        </a-assets>
+        <!-- Glowing Seed -->
+        <a-sphere id="seed" position="0 0.5 -3" radius="0.3" color="#6be92f" emissive="#6be92f" emissiveIntensity="0.8"
+            class="clickable"></a-sphere>
 
-        <a-sky color="#222831"></a-sky>
-        <a-entity light="type: ambient; intensity: 1"></a-entity>
-        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
+        <!-- Skyline -->
+        <a-box position="-3 1 -7" depth="1" height="2" width="1" color="#777"></a-box>
+        <a-box position="-2 1.5 -7" depth="1" height="3" width="1" color="#666"></a-box>
+        <a-box position="0 1.2 -7" depth="1" height="2.5" width="1" color="#999"></a-box>
+        <a-box position="2 2 -7" depth="1" height="4" width="1" color="#888"></a-box>
+        <a-box position="3 1.5 -7" depth="1" height="3" width="1" color="#aaa"></a-box>
 
-        <!-- GLB model -->
-        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
-
-        <!-- Fallback test object -->
-        <a-box id="test-box" position="0 1.5 -3" color="tomato" class="clickable"></a-box>
-
-        <!-- Camera + Hand Controllers -->
-        <a-entity id="cameraRig" position="0 4 10">
-            <a-camera id="mainCamera" look-controls wasd-controls>
-                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
-                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1"></a-cursor>
+        <!-- Camera & Controls -->
+        <a-entity id="rig" position="0 1.6 0">
+            <a-camera>
+                <a-cursor fuse="false" raycaster="objects: .clickable"
+                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+                    material="color: white; shader: flat" position="0 0 -1"></a-cursor>
             </a-camera>
+        </a-entity>
 
-            <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081" webhook-logger></a-entity>
-
-            <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4" webhook-logger></a-entity>
+        <!-- Text Overlay (hidden by default) -->
+        <a-entity id="storyText" visible="false" position="0 2.5 -3"
+            text="value: 🌱 A New City, A New Start\nI began again here in Stockholm — jobless, hopeful, uncertain. But full of curiosity.; color: white; align: center; width: 4">
         </a-entity>
     </a-scene>
 
     <script>
-        const storyOverlay = document.getElementById('storyOverlay');
-        const cameraRig = document.getElementById('cameraRig');
-        const modelEl = document.getElementById('model');
-        const clickableObjects = {};
-        const defaultCameraPos = new THREE.Vector3(0, 4, 10);
-        const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+        // Show text when seed is clicked
+        const seed = document.querySelector('#seed');
+        const story = document.querySelector('#storyText');
 
-        function showStory(text) {
-            storyOverlay.innerHTML = text;
-            storyOverlay.style.display = "block";
-        }
-
-        function hideStory() {
-            storyOverlay.style.display = "none";
-        }
-
-        function showStoryForMesh(name) {
-            const lower = name.toLowerCase();
-            if (lower.includes("bed")) {
-                showStory("🛏️ <b>The Bed</b><br>Motherhood and ambition balanced.");
-            } else if (lower.includes("monitor")) {
-                showStory("💻 <b>The Monitor</b><br>Late nights learning and applying.");
-            } else if (lower.includes("plant")) {
-                showStory("🪴 <b>The Plant</b><br>Quiet growth in a new city.");
-            } else if (lower.includes("rack")) {
-                showStory("🎬 <b>The YouTube Frame</b><br>Learning through creators.");
-            } else if (lower.includes("cylinder")) {
-                showStory("🖼️ <b>The Wall Frame</b><br>Reminders to dream big.");
-            } else if (lower.includes("speaker")) {
-                showStory("🔊 <b>The Speaker</b><br>Hope through music and podcasts.");
-            } else if (lower.includes("cube011")) {
-                showStory("💡 <b>The Light</b><br>Direction and growth.");
-            } else {
-                showStory("✨ <b>Something Familiar</b><br>Each object holds part of my story.");
-            }
-        }
-
-        function focusOnObject(name) {
-            const cam3D = cameraRig.object3D;
-            const target = clickableObjects[name];
-            if (!target) return;
-
-            const box = new THREE.Box3().setFromObject(target);
-            const center = box.getCenter(new THREE.Vector3());
-            const direction = center.clone().sub(cam3D.position).normalize();
-            const newPos = center.clone().add(direction.multiplyScalar(-3.5));
-
-            new TWEEN.Tween(cam3D.position)
-                .to({ x: newPos.x, y: newPos.y, z: newPos.z }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .start();
-
-            const temp = { t: 0 };
-            const startQuat = cam3D.quaternion.clone();
-            const endQuat = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(newPos, center, new THREE.Vector3(0, 1, 0))
-            );
-
-            new TWEEN.Tween(temp)
-                .to({ t: 1 }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => {
-                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
-                })
-                .start();
-        }
-
-        modelEl.addEventListener('model-loaded', () => {
-            const model = modelEl.getObject3D('mesh');
-            model.traverse(node => {
-                if (node.isMesh) {
-                    node.visible = true;
-                    node.userData.clickable = true;
-                    clickableObjects[node.name] = node;
-                }
-            });
-
-            // Refresh raycaster after model loads
-            setTimeout(() => {
-                document.querySelectorAll('[raycaster]').forEach(el => {
-                    if (el.components.raycaster) {
-                        el.components.raycaster.refreshObjects();
-                    }
-                });
-            }, 1000);
-        });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            TWEEN.update();
-        }
-        animate();
-    </script>
-
-    <script>
-        // ✅ Replace this with your real Webhook.site link
-        const webhookUrl = 'https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f';
-
-        AFRAME.registerComponent('webhook-logger', {
-            init: function () {
-                const el = this.el;
-                function sendLog(msg) {
-                    try {
-                        fetch(webhookUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                log: msg,
-                                source: el.id || 'controller'
-                            })
-                        });
-                    } catch (e) {
-                        console.warn('Webhook send failed', e);
-                    }
-                }
-
-                el.addEventListener('buttondown', () => {
-                    const hit = el.components.raycaster.intersectedEl;
-                    if (hit) {
-                        const name = hit.getAttribute('id') || hit.getAttribute('class') || hit.tagName || '[unnamed]';
-                        sendLog(`✅ HIT: ${name}`);
-                        focusOnObject(name);
-                        showStoryForMesh(name);
-                    } else {
-                        sendLog('❌ Button pressed, but no intersectedEl');
-                    }
-                });
-
-                el.addEventListener('raycaster-intersection', (e) => {
-                    const names = e.detail.els.map(el => el.id || el.tagName || '[unknown]');
-                    sendLog(`🎯 Raycaster seeing: ${names.join(', ')}`);
-                });
-
-                el.addEventListener('raycaster-intersection-cleared', () => {
-                    sendLog(`⚪ Raycaster cleared from ${el.id}`);
-                });
-            }
+        seed.addEventListener('click', () => {
+            story.setAttribute('visible', true);
         });
     </script>
 </body>
