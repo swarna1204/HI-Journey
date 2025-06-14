@@ -2,9 +2,13 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Hyper Island Journey — A-Frame VR Interaction</title>
+    <meta charset="UTF-8">
+    <title>Hyper Island Journey — A-Frame + Super Hands</title>
+    <!-- 1) A-Frame -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- 2) Super Hands (v4) -->
+    <script src="https://unpkg.com/aframe-super-hands-component@4.0.4/dist/aframe-super-hands.min.js"></script>
+    <!-- 3) Tween.js for camera tweens -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
         html,
@@ -87,6 +91,18 @@
     <div id="storyOverlay"></div>
     <audio id="bg-music" src="audio/musicbg.mp3" loop></audio>
 
+    <!-- register a tiny component to forward grab-starts -->
+    <script>
+        AFRAME.registerComponent('relay-grab', {
+            init: function () {
+                this.el.addEventListener('grab-start', (evt) => {
+                    const name = this.el.getAttribute('data-mesh-name');
+                    if (name) window.handleMeshClick(name);
+                });
+            }
+        });
+    </script>
+
     <a-scene vr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
         <a-sky color="#222831"></a-sky>
         <a-entity light="type: ambient; intensity: 1"></a-entity>
@@ -96,44 +112,41 @@
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Room -->
-        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <!-- 1) Your room model -->
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10">
+        </a-entity>
 
-        <!-- Camera & Controllers -->
+        <!-- 2) Camera + controllers with super-hands -->
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
 
-            <!-- Left Hand -->
-            <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable-mesh; far: 30"
-                cursor="rayOrigin: entity; fuse: false">
-            </a-entity>
+            <!-- Left hand: laser + super-hands -->
+            <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable; far: 30"
+                super-hands="colliderEvent: raycaster-intersected; grabStartButtons: triggerdown"></a-entity>
 
-            <!-- Right Hand -->
-            <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable-mesh; far: 30"
-                cursor="rayOrigin: entity; fuse: false">
-            </a-entity>
+            <!-- Right hand: laser + super-hands -->
+            <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable; far: 30"
+                super-hands="colliderEvent: raycaster-intersected; grabStartButtons: triggerdown"></a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // DOM references
-        const modelEl = document.getElementById('model');
-        const leftHand = document.getElementById('leftHand');
-        const rightHand = document.getElementById('rightHand');
+        // DOM refs
+        const modelEl = document.querySelector('#model');
         const zoomButtons = document.querySelectorAll('.zoomButton');
         const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
+        const cameraRig3D = document.querySelector('#cameraRig').object3D;
         const defaultCamPos = new THREE.Vector3(0, 4, 10);
         const defaultCamQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
-        const cameraRig3D = document.querySelector('#cameraRig').object3D;
 
-        // play bg music on first click
+        // Play music
         window.addEventListener('click', function once() {
             const a = document.getElementById('bg-music');
             if (a.paused) { a.play(); window.removeEventListener('click', once); }
         });
 
-        // helper to show story text
+        // Story helpers
         function showStory(html) {
             storyOverlay.innerHTML = html;
             storyOverlay.style.display = 'block';
@@ -141,8 +154,6 @@
         function hideStory() {
             storyOverlay.style.display = 'none';
         }
-
-        // your existing story logic
         function showStoryForMesh(name) {
             const l = name.toLowerCase();
             if (l.includes('bed')) showStory('🛏️ <b>The Bed</b><br>Balancing motherhood & ambition…');
@@ -151,7 +162,7 @@
             else showStory('✨ <b>Discovery</b><br>Every object holds a story.');
         }
 
-        // camera focus tween
+        // Camera tween
         function focusOnObject(name) {
             const mesh = modelEl.getObject3D('mesh').getObjectByName(name);
             if (!mesh) return;
@@ -164,12 +175,10 @@
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
 
-            const tmp = { t: 0 },
-                startQ = cameraRig3D.quaternion.clone(),
-                endQ = new THREE.Quaternion().setFromRotationMatrix(
-                    new THREE.Matrix4().lookAt(newPos, ctr, new THREE.Vector3(0, 1, 0))
-                );
-
+            const tmp = { t: 0 }, startQ = cameraRig3D.quaternion.clone();
+            const endQ = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(newPos, ctr, new THREE.Vector3(0, 1, 0))
+            );
             new TWEEN.Tween(tmp)
                 .to({ t: 1 }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
@@ -179,68 +188,44 @@
             backButton.style.display = 'block';
         }
 
-        // unified handler
-        function handleMeshClick(name) {
-            showStoryForMesh(name);
-            focusOnObject(name);
-        }
+        // Central handler
+        window.handleMeshClick = function (meshName) {
+            showStoryForMesh(meshName);
+            focusOnObject(meshName);
+        };
 
-        // set up invisible proxy boxes
+        // Build transparent proxies
         modelEl.addEventListener('model-loaded', () => {
             const threeMesh = modelEl.getObject3D('mesh');
+            threeMesh.updateMatrixWorld(true);
             threeMesh.traverse(node => {
                 if (node.isMesh && node.name) {
-                    // box size & center
                     const box = new THREE.Box3().setFromObject(node);
                     const size = box.getSize(new THREE.Vector3());
                     const center = box.getCenter(new THREE.Vector3());
-
-                    // create proxy
                     const proxy = document.createElement('a-entity');
-                    proxy.setAttribute('geometry', `
-            primitive: box;
-            width: ${size.x};
-            height: ${size.y};
-            depth: ${size.z}`);
+                    proxy.setAttribute('geometry', `primitive: box; width: ${size.x}; height: ${size.y}; depth: ${size.z}`);
                     proxy.setAttribute('material', 'opacity: 0; transparent: true');
-                    proxy.setAttribute('class', 'clickable-mesh');
-                    proxy.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
+                    proxy.setAttribute('class', 'clickable');
                     proxy.setAttribute('data-mesh-name', node.name);
-
-                    // inject into scene
+                    proxy.setAttribute('relay-grab', '');
+                    proxy.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
                     document.querySelector('a-scene').appendChild(proxy);
                 }
             });
-            // enable your UI
             zoomButtons.forEach(b => b.classList.add('enabled'));
-            // initial intro
-            setTimeout(() => {
-                showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.');
-            }, 700);
-
-            // wire up controller events
-            [leftHand, rightHand].forEach(handEl => {
-                handEl.addEventListener('triggerdown', () => {
-                    const hits = handEl.components.raycaster.intersectedEls || [];
-                    for (const el of hits) {
-                        if (el.classList.contains('clickable-mesh')) {
-                            handleMeshClick(el.getAttribute('data-mesh-name'));
-                            break;
-                        }
-                    }
-                });
-            });
+            setTimeout(() => showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.'), 700);
         });
 
-        // UI button clicks
+        // UI buttons
         zoomButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 if (!btn.classList.contains('enabled')) return;
-                handleMeshClick(btn.dataset.target);
+                window.handleMeshClick(btn.dataset.target);
             });
         });
 
-        // back button
+        // Back button
         backButton.addEventListener('click', () => {
             new TWEEN.Tween(cameraRig3D.position)
                 .to({ x: defaultCamPos.x, y: defaultCamPos.y, z: defaultCamPos.z }, 1200)
@@ -261,7 +246,6 @@
             requestAnimationFrame(animate);
             TWEEN.update();
         })();
-
     </script>
 </body>
 
