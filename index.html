@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8" />
     <title>Hyper Island Journey — Immersive A-Frame Experience</title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
@@ -27,21 +26,6 @@
             gap: 10px;
             z-index: 1000;
             flex-wrap: wrap;
-            pointer-events: auto;
-        }
-
-        #backButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1000;
-            display: none;
-            pointer-events: auto;
         }
 
         .zoomButton {
@@ -59,7 +43,19 @@
 
         .zoomButton.enabled {
             opacity: 1;
-            pointer-events: auto;
+        }
+
+        #backButton {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
         }
 
         #storyOverlay {
@@ -78,7 +74,6 @@
             z-index: 99999 !important;
             text-align: center;
             letter-spacing: 0.03em;
-            pointer-events: none;
         }
     </style>
 </head>
@@ -96,14 +91,9 @@
 
     <div id="backButton">Back</div>
     <div id="storyOverlay"></div>
+    <audio id="bg-music" src="audio/musicbg.mp3" loop></audio>
 
-    <!-- Background Music: hidden audio, plays on user click -->
-    <audio id="bg-music" src="audio/musicbg.mp3"
-        loop></audio>
-
-    <a-scene id="scene" vr-mode-ui="enabled: true" cursor="rayOrigin: mouse"
-        renderer="antialias: true; precision: high;">
-
+    <a-scene id="scene" vr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
         <a-sky color="#222831"></a-sky>
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
@@ -112,32 +102,28 @@
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
 
-        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10">
-        </a-entity>
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10" class="clickable"></a-entity>
 
         <a-entity id="cameraRig" position="0 4 10">
-            <a-camera look-controls wasd-controls>
-                <!-- Desktop cursor -->
+            <a-camera raycaster="objects: .clickable, .clickable-mesh" cursor="rayOrigin: mouse" look-controls
+                wasd-controls>
                 <a-cursor position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                    material="color: white; shader: flat" raycaster="objects: .clickable, .clickable-mesh">
+                    material="color: white; shader: flat">
                 </a-cursor>
             </a-camera>
 
-            <!-- VR Hand Controllers with proper raycasters -->
-            <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: lowPoly; color: #ffb400"
-                raycaster="objects: .clickable, .clickable-mesh; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
-                laser-controls="hand: left">
+            <!-- VR Hands -->
+            <a-entity id="leftHand" laser-controls="hand: left"
+                raycaster="objects: .clickable, .clickable-mesh; far: 20" line="color: red; opacity: 0.8">
             </a-entity>
 
-            <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: lowPoly; color: #ffb400"
-                raycaster="objects: .clickable, .clickable-mesh; far: 20; showLine: true; lineColor: red; lineOpacity: 0.8"
-                laser-controls="hand: right">
+            <a-entity id="rightHand" laser-controls="hand: right"
+                raycaster="objects: .clickable, .clickable-mesh; far: 20" line="color: red; opacity: 0.8">
             </a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // Enable background music on first user click (browser policy fix)
         window.addEventListener('click', function enableAudio() {
             var audio = document.getElementById('bg-music');
             if (audio && audio.paused) {
@@ -146,135 +132,74 @@
             }
         });
 
-        const sceneEl = document.querySelector('a-scene');
+        const cameraRig = document.querySelector('#cameraRig');
         const modelEl = document.querySelector('#model');
-        const cameraEl = document.querySelector('#cameraRig');
+        const sceneEl = document.querySelector('a-scene');
         const zoomButtons = document.querySelectorAll('.zoomButton');
-        const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
+        const backButton = document.getElementById('backButton');
         const clickableObjects = {};
-
-        // Get VR controllers
-        const leftHand = document.querySelector('#leftHand');
-        const rightHand = document.querySelector('#rightHand');
 
         const defaultCameraPos = new THREE.Vector3(0, 4, 10);
         const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
 
-        const zoomDistances = {
-            'Speaker_1': 3,
-            'Cube011_1': 4,
-            'default': 3.5
-        };
-
         function showStory(text) {
             storyOverlay.innerHTML = text;
             storyOverlay.style.display = "block";
-            console.log("showStory called with text:", text);
         }
 
         function hideStory() {
             storyOverlay.style.display = "none";
         }
 
-        // Super robust story function!
-        function showStoryForMesh(meshName) {
-            if (!meshName) return;
-            const lower = meshName.toLowerCase();
-            console.log("showStoryForMesh called with:", meshName);
+        function handleMeshClick(name) {
+            showStoryForMesh(name);
+            focusOnObject(name);
+        }
 
-            if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
-                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+        function showStoryForMesh(name) {
+            const lower = name.toLowerCase();
+            if (lower.includes("bed")) {
+                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition...");
             } else if (lower.includes("monitor")) {
-                showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+                showStory("💻 <b>The Monitor</b><br>Countless late nights learning...");
             } else if (lower.includes("plant")) {
-                showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
-            } else if (lower.includes("rack")) {
-                showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
-            } else if (lower.includes("cylinder")) {
-                showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
-            } else if (lower.includes("speaker")) {
-                showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
-            } else if (lower.includes("cube011")) {
-                showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
-            } else if (lower.includes("cube")) {
-                showStory("🟪 <b>Cube Object</b><br>This is a generic cube in your scene.");
+                showStory("🪴 <b>The Plant</b><br>Roots take time...");
             } else {
-                showStory("✨ <b>Something in My Room</b><br>This object is part of the story, but not a main scene highlight. Explore more!");
+                showStory("✨ <b>Object</b><br>This object is part of the journey.");
             }
         }
 
-        // Disable buttons initially
-        zoomButtons.forEach(button => {
-            button.classList.remove('enabled');
-        });
-
-        // Function to handle mesh clicks from any source
-        function handleMeshClick(meshName) {
-            console.log("Mesh clicked:", meshName);
-            focusOnObject(meshName);
-            showStoryForMesh(meshName);
-        }
-
-        // After model loads, map mesh names for click events
         modelEl.addEventListener('model-loaded', () => {
-            console.log('Model loaded, setting up interactions...');
-            const model = modelEl.getObject3D('mesh');
-
-            // Create clickable entities for each mesh
-            model.traverse(node => {
+            const mesh = modelEl.getObject3D('mesh');
+            mesh.traverse(node => {
                 if (node.isMesh && node.name) {
                     clickableObjects[node.name] = node;
-                    node.userData.clickable = true;
-                    console.log('Found mesh:', node.name);
-
-                    // Create invisible clickable boxes for each mesh
                     const box = new THREE.Box3().setFromObject(node);
                     const size = box.getSize(new THREE.Vector3());
                     const center = box.getCenter(new THREE.Vector3());
 
-                    // Create A-Frame entity for this mesh
-                    const clickableEntity = document.createElement('a-entity');
-                    clickableEntity.setAttribute('class', 'clickable-mesh');
-                    clickableEntity.setAttribute('geometry', {
-                        primitive: 'box',
-                        width: size.x,
-                        height: size.y,
-                        depth: size.z
-                    });
-                    clickableEntity.setAttribute('material', {
-                        opacity: 0,
-                        transparent: true
-                    });
-                    clickableEntity.setAttribute('position', {
-                        x: center.x,
-                        y: center.y,
-                        z: center.z
-                    });
-                    clickableEntity.setAttribute('data-mesh-name', node.name);
+                    const proxy = document.createElement('a-entity');
+                    proxy.setAttribute('geometry', `primitive: box; width: ${size.x}; height: ${size.y}; depth: ${size.z}`);
+                    proxy.setAttribute('material', 'opacity: 0; transparent: true');
+                    proxy.setAttribute('class', 'clickable-mesh');
+                    proxy.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
+                    proxy.setAttribute('data-mesh-name', node.name);
 
-                    // Add click event to the invisible box
-                    clickableEntity.addEventListener('click', function (evt) {
-                        console.log('Clickable entity clicked:', node.name);
+                    proxy.addEventListener('click', () => {
                         handleMeshClick(node.name);
-                        evt.stopPropagation();
                     });
 
-                    modelEl.appendChild(clickableEntity);
+                    modelEl.appendChild(proxy);
                 }
             });
 
-            // Enable UI buttons
-            zoomButtons.forEach(button => {
-                button.classList.add('enabled');
-            });
-
+            zoomButtons.forEach(btn => btn.classList.add('enabled'));
             setTimeout(() => {
-                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
+                showStory("🌱 <b>A New City, A New Start</b><br>This is where it began.");
             }, 700);
         });
 
-        // UI button interactions
         zoomButtons.forEach(button => {
             button.addEventListener('click', () => {
                 if (!button.classList.contains('enabled')) return;
@@ -283,176 +208,55 @@
             });
         });
 
-        // Enhanced VR Controller Events - Simplified approach
-        function setupVRInteractions() {
-            console.log('Setting up VR interactions...');
+        function focusOnObject(name) {
+            const cam3D = cameraRig.object3D;
+            const mesh = clickableObjects[name];
+            if (!mesh) return;
 
-            // Simple trigger events for both hands
-            leftHand.addEventListener('triggerdown', function (evt) {
-                console.log('Left trigger pressed');
-                checkVRIntersection(leftHand, 'left');
-            });
-
-            rightHand.addEventListener('triggerdown', function (evt) {
-                console.log('Right trigger pressed');
-                checkVRIntersection(rightHand, 'right');
-            });
-
-            // Alternative click events
-            leftHand.addEventListener('click', function (evt) {
-                console.log('Left hand click event:', evt.detail);
-                if (evt.detail && evt.detail.intersection) {
-                    const meshName = getMeshNameFromIntersection(evt.detail.intersection);
-                    if (meshName) {
-                        console.log('Left click mesh:', meshName);
-                        handleMeshClick(meshName);
-                    }
-                }
-            });
-
-            rightHand.addEventListener('click', function (evt) {
-                console.log('Right hand click event:', evt.detail);
-                if (evt.detail && evt.detail.intersection) {
-                    const meshName = getMeshNameFromIntersection(evt.detail.intersection);
-                    if (meshName) {
-                        console.log('Right click mesh:', meshName);
-                        handleMeshClick(meshName);
-                    }
-                }
-            });
-        }
-
-        function checkVRIntersection(handEl, handName) {
-            const raycaster = handEl.components.raycaster;
-            if (!raycaster) {
-                console.log('No raycaster found for', handName, 'hand');
-                return;
-            }
-
-            const intersectedEl = raycaster.intersectedEl;
-            console.log(handName + ' hand intersected element:', intersectedEl);
-
-            if (intersectedEl) {
-                // Check if it's our model or a clickable mesh
-                if (intersectedEl === modelEl) {
-                    const intersection = raycaster.getIntersection(modelEl);
-                    if (intersection && intersection.object && intersection.object.name) {
-                        console.log(handName + ' hand hit mesh:', intersection.object.name);
-                        handleMeshClick(intersection.object.name);
-                        return;
-                    }
-                }
-
-                // Check if it's a clickable-mesh entity
-                if (intersectedEl.classList.contains('clickable-mesh')) {
-                    const meshName = intersectedEl.getAttribute('data-mesh-name');
-                    if (meshName) {
-                        console.log(handName + ' hand hit clickable entity:', meshName);
-                        handleMeshClick(meshName);
-                        return;
-                    }
-                }
-            }
-
-            console.log(handName + ' hand: no valid intersection found');
-        }
-
-        function getMeshNameFromIntersection(intersection) {
-            if (intersection && intersection.object && intersection.object.name) {
-                return intersection.object.name;
-            }
-            return null;
-        }
-
-        // Wait for scene to be ready, then setup VR interactions
-        sceneEl.addEventListener('loaded', function () {
-            console.log('Scene loaded, setting up VR interactions...');
-            setupVRInteractions();
-        });
-
-        // Also setup after entering VR
-        sceneEl.addEventListener('enter-vr', function () {
-            console.log('Entered VR mode - lasers should be visible');
-            setTimeout(setupVRInteractions, 100); // Small delay to ensure controllers are ready
-        });
-
-        sceneEl.addEventListener('exit-vr', function () {
-            console.log('Exited VR mode');
-        });
-
-        // Camera movement logic
-        function focusOnObject(meshName) {
-            const cam3D = cameraEl.object3D;
-            const targetMesh = clickableObjects[meshName];
-            if (!targetMesh) {
-                console.warn("Object not found: " + meshName);
-                return;
-            }
-
-            const box = new THREE.Box3().setFromObject(targetMesh);
+            const box = new THREE.Box3().setFromObject(mesh);
             const center = box.getCenter(new THREE.Vector3());
-            let newCameraPos, lookAtTarget;
-            const lower = meshName.toLowerCase();
-
-            if (lower.includes('cylinder')) {
-                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
-                lookAtTarget = center.clone();
-            }
-            else if (lower.includes('bed')) {
-                newCameraPos = center.clone().add(new THREE.Vector3(0, 8, 0));
-                lookAtTarget = center.clone();
-            }
-            else if (lower.includes('cube011')) {
-                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 4));
-                lookAtTarget = center.clone();
-            }
-            else {
-                const direction = center.clone().sub(cam3D.position).normalize();
-                const zoomDistance = zoomDistances[meshName] || zoomDistances['default'];
-                newCameraPos = center.clone().add(direction.multiplyScalar(-zoomDistance));
-                lookAtTarget = center.clone();
-            }
+            const target = center.clone();
+            const newCamPos = target.clone().add(new THREE.Vector3(0, 2, 5));
 
             new TWEEN.Tween(cam3D.position)
-                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1500)
+                .to(newCamPos, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
 
             const temp = { t: 0 };
             const startQuat = cam3D.quaternion.clone();
             const endQuat = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(newCameraPos, lookAtTarget, new THREE.Vector3(0, 1, 0))
+                new THREE.Matrix4().lookAt(newCamPos, target, new THREE.Vector3(0, 1, 0))
             );
 
             new TWEEN.Tween(temp)
-                .to({ t: 1 }, 1500)
+                .to({ t: 1 }, 1200)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => {
-                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
-                })
+                .onUpdate(() => cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t))
                 .start();
 
             backButton.style.display = "block";
         }
 
         backButton.addEventListener('click', () => {
-            const cam3D = cameraEl.object3D;
+            const cam3D = cameraRig.object3D;
+
             new TWEEN.Tween(cam3D.position)
-                .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1500)
+                .to(defaultCameraPos, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
+
             const temp = { t: 0 };
             const startQuat = cam3D.quaternion.clone();
-            const endQuat = defaultCameraQuat.clone();
+
             new TWEEN.Tween(temp)
                 .to({ t: 1 }, 1500)
                 .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => {
-                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
-                })
+                .onUpdate(() => cam3D.quaternion.copy(startQuat).slerp(defaultCameraQuat, temp.t))
                 .start();
-            backButton.style.display = "none";
+
             hideStory();
+            backButton.style.display = "none";
         });
 
         function animate() {
