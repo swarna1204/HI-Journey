@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>VR Controller Laser + Click Test</title>
+    <title>VR Controller Visibility + Laser Test</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
@@ -13,60 +13,58 @@
         <!-- Ground -->
         <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#444"></a-plane>
 
-        <!-- Red Test Box -->
+        <!-- Red Box to point at -->
         <a-box position="0 1.5 -3" color="red" class="clickable" id="target-box"></a-box>
 
-        <!-- Lighting -->
+        <!-- Lights -->
         <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
         <a-entity light="type: ambient; intensity: 0.6"></a-entity>
 
-        <!-- Camera + Hand Controllers -->
+        <!-- Camera Rig -->
         <a-entity id="rig" position="0 1.6 0">
             <a-camera>
+                <!-- Desktop cursor support -->
                 <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
                     geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1">
                 </a-cursor>
             </a-camera>
 
-            <!-- Right Hand -->
-            <a-entity id="rightHand" meta-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
+            <!-- Right Hand Controller with visible model -->
+            <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
                 line="color: #FF4081" vr-button-click-logger>
             </a-entity>
 
-            <!-- Left Hand -->
-            <a-entity id="leftHand" meta-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
+            <!-- Left Hand Controller -->
+            <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
                 line="color: #00BCD4" vr-button-click-logger>
             </a-entity>
         </a-entity>
-
     </a-scene>
 
     <script>
-        // Component to log button presses and intersection hits
         AFRAME.registerComponent('vr-button-click-logger', {
             init: function () {
                 const el = this.el;
 
-                // When the controller button is pressed
-                el.addEventListener('buttondown', function () {
-                    const raycaster = el.components.raycaster;
-                    const intersects = raycaster ? raycaster.intersections : [];
-
-                    if (intersects.length > 0) {
-                        const hitObj = intersects[0].object;
-                        console.log('✅ Controller Button HIT:', hitObj.name || hitObj.el);
-                    } else {
-                        console.log('❌ Button pressed, but no intersection');
-                    }
-                });
-
-                // Log what the ray is seeing
+                // Logs what the ray is intersecting
                 el.addEventListener('raycaster-intersection', function (e) {
                     console.log('🎯 Raycaster seeing:', e.detail.els.map(el => el.id || el.tagName));
                 });
 
                 el.addEventListener('raycaster-intersection-cleared', function () {
                     console.log('⚪ Raycaster cleared from:', el.id);
+                });
+
+                // Logs when controller button is pressed
+                el.addEventListener('buttondown', function () {
+                    const raycaster = el.components.raycaster;
+                    const intersects = raycaster ? raycaster.intersections : [];
+                    if (intersects.length > 0) {
+                        const hitObj = intersects[0].object;
+                        console.log('✅ Controller Button HIT:', hitObj.name || hitObj.el);
+                    } else {
+                        console.log('❌ Button pressed, but no intersection');
+                    }
                 });
             }
         });
