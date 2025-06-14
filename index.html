@@ -1,66 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8" />
-    <title>VR Controller Final Test</title>
+    <meta charset="UTF-8">
+    <title>VR Webhook Logging Test</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
 <body>
     <a-scene background="color: #111" xr-mode-ui="enabled: true">
-
-        <!-- Ground -->
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#444"></a-plane>
-
-        <!-- Red Box to interact with -->
+        <!-- Test Box -->
         <a-box id="target-box" class="clickable" position="0 1.5 -3" color="red"></a-box>
 
-        <!-- Lighting -->
-        <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
-        <a-entity light="type: ambient; intensity: 0.6"></a-entity>
-
-        <!-- Camera Rig -->
-        <a-entity id="rig" position="0 1.6 0">
+        <!-- Camera + Controllers -->
+        <a-entity position="0 1.6 0">
             <a-camera>
-                <!-- For desktop support -->
                 <a-cursor fuse="false" raycaster="objects: .clickable" material="color: yellow"
-                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1">
-                </a-cursor>
+                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1"></a-cursor>
             </a-camera>
 
-            <!-- Right Controller -->
             <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081" vr-button-click-logger>
+                line="color: #FF4081" webhook-logger>
             </a-entity>
 
-            <!-- Left Controller -->
             <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4" vr-button-click-logger>
+                line="color: #00BCD4" webhook-logger>
             </a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        AFRAME.registerComponent('vr-button-click-logger', {
+        AFRAME.registerComponent('webhook-logger', {
             init: function () {
                 const el = this.el;
+                const webhookUrl = 'https://webhook.site/7e711964-46a9-4f17-82a1-06ffce9a8b0f'; // replace below
 
-                el.addEventListener('raycaster-intersection', function (e) {
-                    console.log('🎯 Raycaster seeing:', e.detail.els.map(el => el.id || el.tagName));
-                });
+                function sendLog(message) {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ log: message, source: el.id || 'unknown' })
+                    }).catch(() => { });
+                }
 
-                el.addEventListener('raycaster-intersection-cleared', function () {
-                    console.log('⚪ Raycaster cleared from:', el.id);
-                });
-
-                el.addEventListener('buttondown', function () {
-                    const intersectedEl = el.components.raycaster.intersectedEl;
-                    if (intersectedEl) {
-                        console.log('✅ HIT:', intersectedEl.id || intersectedEl.tagName || intersectedEl.className);
+                el.addEventListener('buttondown', () => {
+                    const hit = el.components.raycaster.intersectedEl;
+                    if (hit) {
+                        sendLog(`✅ HIT: ${hit.id || hit.tagName || hit.className}`);
                     } else {
-                        console.log('❌ Button pressed, but no intersectedEl');
+                        sendLog(`❌ Button pressed, but no intersectedEl`);
                     }
+                });
+
+                el.addEventListener('raycaster-intersection', (e) => {
+                    const seen = e.detail.els.map(el => el.id || el.tagName || '[unknown]');
+                    sendLog(`🎯 Raycaster seeing: ${seen.join(', ')}`);
+                });
+
+                el.addEventListener('raycaster-intersection-cleared', () => {
+                    sendLog(`⚪ Raycaster cleared from: ${el.id}`);
                 });
             }
         });
