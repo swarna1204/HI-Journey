@@ -2,243 +2,174 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Hyper Island Journey — Immersive A-Frame Experience</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <meta charset="UTF-8">
+    <title>Hyper Island Journey – Three.js WebXR Interaction</title>
     <style>
-        html,
         body {
             margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
             overflow: hidden;
-            font-family: Arial;
-        }
-
-        #buttons {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .zoomButton {
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            color: #222831;
-            opacity: 0.5;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .zoomButton.enabled {
-            opacity: 1;
-        }
-
-        #backButton {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            display: none;
-            z-index: 1000;
         }
 
         #storyOverlay {
             display: none;
             position: fixed;
-            top: 110px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(34, 40, 49, 0.95);
+            background: rgba(0, 0, 0, 0.7);
             color: #fff;
-            font-size: 1.5rem;
-            max-width: 80vw;
-            padding: 1.3rem 2.3rem;
-            border-radius: 18px;
-            box-shadow: 0 4px 32px #111a;
-            text-align: center;
-            z-index: 99999;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #enterVR {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
         }
     </style>
 </head>
 
 <body>
-    <div id="buttons">
-        <div class="zoomButton" data-target="monitor001_3">Monitor</div>
-        <div class="zoomButton" data-target="bed">Bed</div>
-        <div class="zoomButton" data-target="houseplant_1">Plant</div>
-        <div class="zoomButton" data-target="Rack001_1">YT Frame</div>
-        <div class="zoomButton" data-target="Cylinder001">Wall Frame</div>
-        <div class="zoomButton" data-target="Speaker_1">Speaker</div>
-        <div class="zoomButton" data-target="Cube011_1">Light</div>
-    </div>
-    <div id="backButton">Back</div>
     <div id="storyOverlay"></div>
-    <audio id="bg-music" src="audio/musicbg.mp3" loop></audio>
-
-    <a-scene id="scene" vr-mode-ui="enabled: true" renderer="antialias: true; precision: high;">
-        <a-sky color="#222831"></a-sky>
-        <a-entity light="type: ambient; intensity: 1"></a-entity>
-        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
-
-        <a-assets>
-            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
-        </a-assets>
-
-        <!-- Room Model -->
-        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10">
-        </a-entity>
-
-        <!-- Camera & Controllers -->
-        <a-entity id="cameraRig" position="0 4 10">
-            <a-camera look-controls wasd-controls></a-camera>
-
-            <!-- Left Hand -->
-            <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable; far: 20">
-            </a-entity>
-
-            <!-- Right Hand -->
-            <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable; far: 20">
-            </a-entity>
-        </a-entity>
-    </a-scene>
-
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/webxr/VRButton.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/webxr/XRControllerModelFactory.js"></script>
     <script>
-        // Play background music on first click
-        window.addEventListener('click', function once() {
-            const a = document.getElementById('bg-music');
-            if (a.paused) { a.play(); window.removeEventListener('click', once); }
-        });
+        let camera, scene, renderer;
+        let controller1, controller2;
+        let raycaster = new THREE.Raycaster();
+        let tempMatrix = new THREE.Matrix4();
+        let model; // your GLB scene
 
-        const sceneEl = document.querySelector('a-scene');
-        const modelEl = document.querySelector('#model');
-        const leftHand = document.querySelector('#leftHand');
-        const rightHand = document.querySelector('#rightHand');
-        const zoomButtons = document.querySelectorAll('.zoomButton');
-        const storyOverlay = document.getElementById('storyOverlay');
-        const backButton = document.getElementById('backButton');
-        const camRig3D = document.querySelector('#cameraRig').object3D;
-        const defaultPos = new THREE.Vector3(0, 4, 10);
-        const defaultQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+        const overlay = document.getElementById('storyOverlay');
 
-        // Show/hide story overlay
-        function showStory(html) {
-            storyOverlay.innerHTML = html;
-            storyOverlay.style.display = 'block';
+        init();
+        animate();
+
+        function init() {
+            // Scene + Camera
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x222831);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.6, 3);
+
+            // Lights
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+            const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+            dir.position.set(5, 10, 5);
+            scene.add(dir);
+
+            // Renderer + WebXR
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+            document.body.appendChild(VRButton.createButton(renderer));
+
+            // Load GLB model
+            new THREE.GLTFLoader().load('model/model.glb', gltf => {
+                model = gltf.scene;
+                scene.add(model);
+            });
+
+            // Controllers
+            const controllerModelFactory = new THREE.XRControllerModelFactory();
+
+            controller1 = renderer.xr.getController(0);
+            controller1.addEventListener('select', onSelect);
+            scene.add(controller1);
+
+            const grip1 = renderer.xr.getControllerGrip(0);
+            grip1.add(controllerModelFactory.createControllerModel(grip1));
+            scene.add(grip1);
+
+            controller2 = renderer.xr.getController(1);
+            controller2.addEventListener('select', onSelect);
+            scene.add(controller2);
+
+            const grip2 = renderer.xr.getControllerGrip(1);
+            grip2.add(controllerModelFactory.createControllerModel(grip2));
+            scene.add(grip2);
+
+            window.addEventListener('resize', onWindowResize);
         }
-        function hideStory() {
-            storyOverlay.style.display = 'none';
+
+        function onSelect(event) {
+            // Raycast from controller
+            const controller = event.target;
+            tempMatrix.identity().extractRotation(controller.matrixWorld);
+            raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+            raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+            if (!model) return;
+            const intersects = raycaster.intersectObject(model, true);
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                const name = hit.name || hit.parent.name || 'unknown';
+                console.log('Controller hit mesh:', name);
+                showStory(name);
+                focusCameraOn(hit);
+            }
         }
 
-        // Determine story text
-        function showStoryFor(name) {
-            const l = name.toLowerCase();
-            if (l.includes('bed')) return showStory('🛏️ <b>The Bed</b><br>Balancing motherhood & ambition.');
-            if (l.includes('monitor')) return showStory('💻 <b>The Monitor</b><br>Late-night coding.');
-            if (l.includes('plant')) return showStory('🪴 <b>The Plant</b><br>Roots take time.');
-            return showStory('✨ <b>Discovery</b><br>Every object holds a story.');
+        function showStory(meshName) {
+            let html;
+            const l = meshName.toLowerCase();
+            if (l.includes('bed')) {
+                html = '🛏️ <b>The Bed</b><br>Balancing motherhood and ambition…';
+            } else if (l.includes('monitor')) {
+                html = '💻 <b>The Monitor</b><br>Countless late-night coding sessions…';
+            } else if (l.includes('plant')) {
+                html = '🪴 <b>The Plant</b><br>Roots take time to grow.';
+            } else {
+                html = '✨ <b>Discovery</b><br>Every object holds a story.';
+            }
+            overlay.innerHTML = html;
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.style.display = 'none', 3000);
         }
 
-        // Camera focus tween
-        function focusOn(name) {
-            const mesh = modelEl.getObject3D('mesh').getObjectByName(name);
-            if (!mesh) return;
-            const box = new THREE.Box3().setFromObject(mesh);
-            const ctr = box.getCenter(new THREE.Vector3());
-            const pos = ctr.clone().add(new THREE.Vector3(0, 2, 5));
+        function focusCameraOn(mesh) {
+            // Simple camera tween toward mesh center
+            const bbox = new THREE.Box3().setFromObject(mesh);
+            const center = bbox.getCenter(new THREE.Vector3());
+            const newPos = center.clone().add(new THREE.Vector3(0, 1.5, 2));
 
-            new TWEEN.Tween(camRig3D.position)
-                .to({ x: pos.x, y: pos.y, z: pos.z }, 1200)
+            new TWEEN.Tween(camera.position)
+                .to({ x: newPos.x, y: newPos.y, z: newPos.z }, 1000)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
 
-            const tmp = { t: 0 };
-            const startQ = camRig3D.quaternion.clone();
-            const endQ = new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(pos, ctr, new THREE.Vector3(0, 1, 0))
+            const dir = center.clone().sub(camera.position).normalize();
+            const targetQuat = new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 0, -1), dir
             );
-
-            new TWEEN.Tween(tmp)
-                .to({ t: 1 }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(endQ, tmp.t))
-                .start();
-
-            backButton.style.display = 'block';
-        }
-
-        // Unified click handler
-        function handleSelection(name) {
-            showStoryFor(name);
-            focusOn(name);
-        }
-
-        // Manual raycast on trigger
-        function setupControllerRaycast(handEl) {
-            handEl.addEventListener('triggerdown', () => {
-                const rc = handEl.components.raycaster;
-                if (!rc) return;
-                const ints = rc.intersections;
-                if (ints.length === 0) return;
-                // pick first intersection on our model
-                const hit = ints.find(i => i.object && i.object.name);
-                if (hit) handleSelection(hit.object.name);
-            });
-        }
-
-        // UI button handler
-        zoomButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!btn.classList.contains('enabled')) return;
-                handleSelection(btn.dataset.target);
-            });
-        });
-
-        // Back button
-        backButton.addEventListener('click', () => {
-            new TWEEN.Tween(camRig3D.position)
-                .to({ x: defaultPos.x, y: defaultPos.y, z: defaultPos.z }, 1200)
+            new TWEEN.Tween(camera.quaternion)
+                .to({ x: targetQuat.x, y: targetQuat.y, z: targetQuat.z, w: targetQuat.w }, 1000)
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .start();
-            const tmp = { t: 0 }, startQ = camRig3D.quaternion.clone();
-            new TWEEN.Tween(tmp)
-                .to({ t: 1 }, 1200)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => camRig3D.quaternion.copy(startQ).slerp(defaultQuat, tmp.t))
-                .start();
-            hideStory();
-            backButton.style.display = 'none';
-        });
+        }
 
-        // Once model is loaded, enable UI and set up controllers
-        modelEl.addEventListener('model-loaded', () => {
-            zoomButtons.forEach(b => b.classList.add('enabled'));
-            // initial intro
-            setTimeout(() => {
-                showStory('🌱 <b>A New City, A New Start</b><br>My journey began here.');
-            }, 700);
-            // attach manual raycast
-            setupControllerRaycast(leftHand);
-            setupControllerRaycast(rightHand);
-        });
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-        // Animation loop
-        (function animate() {
-            requestAnimationFrame(animate);
+        function animate() {
+            renderer.setAnimationLoop(render);
+        }
+
+        function render() {
             TWEEN.update();
-        })();
+            renderer.render(scene, camera);
+        }
     </script>
 </body>
 
