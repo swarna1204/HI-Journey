@@ -3,25 +3,82 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Hyper Island Journey — Debuggable Interaction</title>
+    <title>Hyper Island Journey — Interactive GLB Scene</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: Arial;
-        }
-
+        /* Desktop Story Header */
         #story-header {
-            /* … your existing styles … */
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
         }
 
-        /* … rest of your CSS … */
+        #story-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            background: linear-gradient(45deg, #4CC3D9, #FFE66D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #story-subtitle {
+            font-size: 16px;
+            margin: 0;
+            color: #ccc;
+            font-style: italic;
+        }
+
+        /* Desktop Overlay */
+        #overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+
+        #overlay button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Controls hint */
+        #controls-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        /* Emphasis for debug name */
         #overlay em {
             color: #ff0;
             font-size: 0.8em;
@@ -30,88 +87,185 @@
 </head>
 
 <body>
-    <!-- desktop header / overlay / controls-info same as before -->
+    <!-- Desktop Story Header -->
     <div id="story-header">
-        <h1 id="story-title">A New City…</h1>
-        <p id="story-subtitle">…hope</p>
+        <h1 id="story-title">A New City, A New Start</h1>
+        <p id="story-subtitle">My Hyper Island journey began here, where everything felt new and full of hope</p>
     </div>
+
+    <!-- Desktop text overlay -->
     <div id="overlay">
-        <div id="overlay-text"></div><button onclick="closeOverlay()">Close</button>
+        <div id="overlay-text"></div>
+        <button onclick="closeOverlay()">Close</button>
     </div>
-    <div id="controls-info">Mouse: Look around | WASD: Move | Click: Interact</div>
+
+    <!-- Controls hint -->
+    <div id="controls-info">
+        Mouse: Look around | WASD: Move | Click: Interact
+    </div>
 
     <a-scene background="color: #1a1a2e" vr-mode-ui="enabled: true">
-        <a-assets><a-asset-item id="roomModel" src="model/model.glb"></a-asset-item></a-assets>
+        <a-assets>
+            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- Lighting -->
         <a-light type="ambient" color="#404040"></a-light>
         <a-light type="directional" position="5 5 5"></a-light>
 
-        <!-- your GLB -->
+        <!-- Your GLB model -->
         <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
 
-        <!-- camera + cursors -->
+        <!-- Camera + desktop cursor -->
         <a-entity camera look-controls wasd-controls position="0 2 5">
-            <a-cursor fuse="false" rayOrigin="mouse" geometry="primitive:ring;radiusInner:0.02;radiusOuter:0.03"
-                material="color:white" raycaster="objects:.clickable"></a-cursor>
+            <a-cursor fuse="false" rayOrigin="mouse" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                material="color: white" raycaster="objects: .clickable">
+            </a-cursor>
         </a-entity>
-        <a-entity hand-controls="hand:left" laser-controls raycaster="objects:.clickable"></a-entity>
-        <a-entity hand-controls="hand:right" laser-controls raycaster="objects:.clickable"></a-entity>
 
-        <!-- VR headers/text same as before -->
-        <!-- … -->
+        <!-- VR Controllers -->
+        <a-entity hand-controls="hand: left" laser-controls raycaster="objects: .clickable">
+        </a-entity>
+        <a-entity hand-controls="hand: right" laser-controls raycaster="objects: .clickable">
+        </a-entity>
+
+        <!-- VR Story Header -->
+        <a-entity id="vr-story-header" position="0 4.5 -6" visible="false">
+            <a-plane width="8" height="1.5" color="#000" opacity="0.6"></a-plane>
+            <a-text id="vr-story-title" position="0 0.3 0" align="center" width="6" color="#4CC3D9"
+                text="value: A New City, A New Start; align: center">
+            </a-text>
+            <a-text id="vr-story-subtitle" position="0 -0.2 0" align="center" width="4" color="#ccc"
+                text="value: My Hyper Island journey began here, where everything felt new and full of hope; align: center">
+            </a-text>
+        </a-entity>
+
+        <!-- VR Interaction Text -->
+        <a-entity id="vr-text-container" position="0 3 -2" visible="false">
+            <a-plane width="12" height="4" color="#000" opacity="0.9"
+                material="transparent: true; side: double"></a-plane>
+            <a-text id="vr-text-title" position="0 1.2 0" align="center" width="10" color="#4CC3D9"
+                text="value: ; align: center; wrapCount:30">
+            </a-text>
+            <a-text id="vr-text" position="0 0 0" align="center" width="8" color="#fff"
+                text="value: Click an object!; align: center; wrapCount:80">
+            </a-text>
+        </a-entity>
     </a-scene>
 
     <script>
-        let isVR = false, vrTextTimeout;
+        let isVR = false;
+        let vrTextTimeout = null;
 
+        // Map mesh names to your story
         function getStory(meshName) {
             const l = meshName.toLowerCase();
-            if (l.includes('bed') || l.includes('blanket') || l.includes('pillow')) return { title: 'The Bed', info: 'Balancing…' };
-            if (l.includes('monitor')) return { title: 'The Monitor', info: 'Countless late nights…' };
-            if (l.includes('plant')) return { title: 'The Plant', info: 'Roots take time…' };
-            if (l.includes('rack')) return { title: 'YouTube Frame', info: 'YouTube was my…' };
-            if (l.includes('cylinder')) return { title: 'The Wall Frame', info: 'My wall frames…' };
-            if (l.includes('speaker')) return { title: 'The Speaker', info: 'Podcasts and music…' };
-            if (l.includes('cube011') || l.includes('cube') || l.includes('light'))
-                return { title: 'The Light', info: 'The light shines…' };
-            return { title: 'Discovery', info: 'This object is part…' };
+            if (l.includes('bed') || l.includes('blanket') || l.includes('pillow')) {
+                return { title: 'The Bed', info: 'Balancing motherhood and ambition—my journey was about family as much as career.' };
+            }
+            if (l.includes('monitor')) {
+                return { title: 'The Monitor', info: 'Countless late nights learning, coding, and applying for jobs. Every click was a step forward.' };
+            }
+            if (l.includes('plant')) {
+                return { title: 'The Plant', info: 'Roots take time. I was growing quietly in a new city, finding my place.' };
+            }
+            if (l.includes('rack')) {
+                return { title: 'The YouTube Frame', info: 'YouTube was my classroom and comfort—where I learned to code and found motivation.' };
+            }
+            if (l.includes('cylinder')) {
+                return { title: 'The Wall Frame', info: 'My wall frames capture moments of growth, obstacles faced, and milestones achieved.' };
+            }
+            if (l.includes('speaker')) {
+                return { title: 'The Speaker', info: 'Podcasts and music kept me company, fueling resilience and hope.' };
+            }
+            if (l.includes('cube011') || l.includes('cube') || l.includes('light')) {
+                return { title: 'The Light', info: 'The light shines on my journey—filled with vision, hope, and new direction.' };
+            }
+            // Fallback
+            return { title: 'Discovery', info: 'This object is part of the story—explore more!' };
         }
 
-        function handleClick(el) {
-            const meshName = el.getAttribute('data-mesh-name');
-            console.log('🔍 clicked meshName:', meshName);
+        // Update both desktop and VR headers
+        function updateStoryHeader(title, subtitle) {
+            document.getElementById('story-title').textContent = title;
+            document.getElementById('story-subtitle').textContent = subtitle;
+            document.getElementById('vr-story-title').setAttribute('text', 'value:' + title + '; align:center');
+            document.getElementById('vr-story-subtitle').setAttribute('text', 'value:' + subtitle + '; align:center');
+        }
+
+        // Show desktop overlay
+        function showOverlay(title, info) {
+            const ov = document.getElementById('overlay');
+            ov.querySelector('#overlay-text').innerHTML = `<strong>${title}</strong><br><br>${info}`;
+            ov.style.display = 'block';
+        }
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // Show VR text
+        function showVRText(title, info) {
+            clearTimeout(vrTextTimeout);
+            document.getElementById('vr-story-header').setAttribute('visible', false);
+            const container = document.getElementById('vr-text-container');
+            document.getElementById('vr-text-title').setAttribute('text', 'value:' + title + '; align:center; wrapCount:30');
+            document.getElementById('vr-text').setAttribute('text', 'value:' + info + '; align:center; wrapCount:80');
+            container.setAttribute('visible', true);
+            vrTextTimeout = setTimeout(() => container.setAttribute('visible', false), 4000);
+        }
+
+        // Central click handler
+        function handleProxyClick(proxyEl) {
+            const meshName = proxyEl.getAttribute('data-mesh-name');
+            console.log('Clicked mesh:', meshName);
             const { title, info } = getStory(meshName);
-            const finalInfo = title === 'Discovery'
-                ? `${info}<br><br><em>(meshName: ${meshName})</em>`
-                : info;
-            updateStoryHeader(title, finalInfo);
-            isVR ? showVRText(title, finalInfo) : showOverlay(title, finalInfo);
-            el.setAttribute('animation__click', 'property:scale;to:0.8 0.8 0.8;dur:200');
-            setTimeout(() => el.setAttribute('animation__click', 'property:scale;to:1 1 1;dur:200'), 200);
+            updateStoryHeader(title, info);
+            if (isVR) showVRText(title, info);
+            else showOverlay(title, info);
+            // click animation feedback
+            proxyEl.setAttribute('animation__click', 'property: scale; to: 0.8 0.8 0.8; dur: 200');
+            setTimeout(() => proxyEl.setAttribute('animation__click', 'property: scale; to: 1 1 1; dur: 200'), 200);
         }
-
-        // … insert here your updateStoryHeader(), showOverlay(), closeOverlay(), showVRText(), etc …
 
         document.addEventListener('DOMContentLoaded', () => {
+            const scene = document.querySelector('a-scene');
+            scene.addEventListener('enter-vr', () => {
+                isVR = true;
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('controls-info').style.display = 'none';
+                document.getElementById('story-header').style.display = 'none';
+                document.getElementById('vr-story-header').setAttribute('visible', true);
+            });
+            scene.addEventListener('exit-vr', () => {
+                isVR = false;
+                document.getElementById('vr-story-header').setAttribute('visible', false);
+                document.getElementById('controls-info').style.display = 'block';
+                document.getElementById('story-header').style.display = 'block';
+            });
+
+            // After GLB loads, build transparent proxies
             const modelEl = document.getElementById('model');
             modelEl.addEventListener('model-loaded', () => {
                 const mesh = modelEl.getObject3D('mesh');
                 mesh.updateMatrixWorld(true);
+
                 mesh.traverse(node => {
                     if (node.isMesh && node.name) {
-                        console.log('🏷️ found mesh node:', node.name);
+                        console.log('Found mesh node:', node.name);
                         const box = new THREE.Box3().setFromObject(node);
                         const size = box.getSize(new THREE.Vector3());
                         const center = box.getCenter(new THREE.Vector3());
+
                         const proxy = document.createElement('a-box');
                         proxy.setAttribute('width', size.x);
                         proxy.setAttribute('height', size.y);
                         proxy.setAttribute('depth', size.z);
                         proxy.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
-                        proxy.setAttribute('material', 'opacity:0;transparent:true');
+                        proxy.setAttribute('material', 'opacity:0; transparent:true');
                         proxy.setAttribute('class', 'clickable');
                         proxy.setAttribute('data-mesh-name', node.name);
-                        proxy.addEventListener('click', () => handleClick(proxy));
-                        document.querySelector('a-scene').appendChild(proxy);
+                        proxy.addEventListener('click', () => handleProxyClick(proxy));
+                        scene.appendChild(proxy);
                     }
                 });
             });
