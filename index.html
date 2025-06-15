@@ -1,213 +1,312 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <title>Interactive A-Frame Scene — Final Fixed</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <meta charset="UTF-8" />
+    <title>Hyper Island Journey — Immersive A-Frame Experience</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
+        html,
         body {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
 
-        #overlay {
+        #buttons {
             position: fixed;
             top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-            max-width: 300px;
-            z-index: 1000;
-            display: none;
-        }
-
-        #overlay button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin-top: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        #story-header {
-            position: fixed;
-            top: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            font-family: 'Arial', sans-serif;
-            text-align: center;
+            display: flex;
+            gap: 10px;
             z-index: 1000;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            pointer-events: auto;
         }
 
-        #story-title {
-            font-size: 28px;
-            font-weight: bold;
-            margin: 0 0 8px 0;
-            background: linear-gradient(45deg, #4CC3D9, #FFE66D);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        #story-subtitle {
-            font-size: 16px;
-            margin: 0;
-            color: #cccccc;
-            font-style: italic;
-        }
-
-        #controls-info {
+        #backButton {
             position: fixed;
             bottom: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
+            background: #fff;
+            padding: 10px 20px;
             border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
             z-index: 1000;
+            display: none;
+            pointer-events: auto;
+        }
+
+        .zoomButton {
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #222831;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            opacity: 0.5;
+            pointer-events: auto;
+        }
+
+        .zoomButton.enabled {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #storyOverlay {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 110px;
+            transform: translateX(-50%);
+            background: rgba(34, 40, 49, 0.95);
+            color: #fff;
+            font-size: 1.5rem;
+            max-width: 80vw;
+            padding: 1.3rem 2.3rem;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px #111a;
+            z-index: 99999 !important;
+            text-align: center;
+            letter-spacing: 0.03em;
+            pointer-events: none;
         }
     </style>
 </head>
 
 <body>
-    <div id="story-header">
-        <h1 id="story-title">A New City, A New Start</h1>
-        <p id="story-subtitle">My Hyper Island journey began here, where everything felt new and full of hope</p>
+    <div id="buttons">
+        <div class="zoomButton" data-target="monitor001_3">Monitor</div>
+        <div class="zoomButton" data-target="bed">Bed</div>
+        <div class="zoomButton" data-target="houseplant_1">Plant</div>
+        <div class="zoomButton" data-target="Rack001_1">YT Frame</div>
+        <div class="zoomButton" data-target="Cylinder001">Wall Frame</div>
+        <div class="zoomButton" data-target="Speaker_1">Speaker</div>
+        <div class="zoomButton" data-target="Cube011_1">Light</div>
     </div>
 
-    <div id="overlay">
-        <div id="overlay-text"></div>
-        <button id="closeBtn">Close</button>
-    </div>
+    <div id="backButton">Back</div>
+    <div id="storyOverlay"></div>
 
-    <div id="controls-info">
-        Mouse: Look around | WASD: Move | Click: Interact with objects
-    </div>
+    <!-- Background Music: hidden audio, plays on user click -->
+    <audio id="bg-music" src="audio/music.mp3"
+        loop></audio>
 
-    <a-scene background="color: #1a1a2e" vr-mode-ui="enabled: true">
-        <a-entity camera position="0 2 5" look-controls wasd-controls>
-            <a-cursor id="mouseCursor" rayOrigin="mouse" fuse="false" raycaster="objects: .clickable"
-                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" material="color: white; shader: flat"
-                cursor-tracker>
-            </a-cursor>
+    <a-scene id="scene" xr-mode-ui="enabled: true" cursor="rayOrigin: mouse" raycaster="objects: .clickable"
+        renderer="antialias: true; precision: high;">
+        <a-sky color="#222831"></a-sky>
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
+        <a-assets>
+            <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
+        </a-assets>
+        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <a-entity id="cameraRig" position="0 4 10">
+            <a-camera look-controls wasd-controls></a-camera>
+            <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+            <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
         </a-entity>
-
-        <!-- Lights -->
-        <a-light type="ambient" color="#404040"></a-light>
-        <a-light type="directional" position="5 5 5"></a-light>
-
-        <!-- Clickable Story Objects -->
-        <a-box class="clickable" position="-8 1.5 -5" color="#4CC3D9" scale="0.8 0.8 0.8"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 4000" data-title="Balancing Life & Dreams"
-            data-info="Balancing motherhood and ambition—my journey was about family as much as career.">
-        </a-box>
-
-        <a-sphere class="clickable" position="-5.25 1.35 -6" radius="0.7" color="#FF6B6B"
-            animation="property: position; to: -5.25 1.85 -6; dir: alternate; loop: true; dur: 2000"
-            data-title="Sleepless Dedication"
-            data-info="Countless late nights learning, coding, and applying for jobs. Every click was a step forward.">
-        </a-sphere>
-
-        <a-dodecahedron class="clickable" position="-2.5 1.2 -7" radius="0.7" color="#DDA0DD"
-            animation="property: rotation; to: 360 360 0; loop: true; dur: 8000" data-title="Finding My Roots"
-            data-info="Roots take time. I was growing quietly in a new city, finding my place.">
-        </a-dodecahedron>
-
-        <a-cylinder class="clickable" position="0 1.8 -9" radius="0.6" height="1.5" color="#4ECDC4"
-            animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 3000"
-            data-title="My Digital Classroom"
-            data-info="YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.">
-        </a-cylinder>
-
-        <a-octahedron class="clickable" position="2.5 1.2 -7" radius="0.8" color="#FFB6C1"
-            animation="property: rotation; to: 0 360 360; loop: true; dur: 7000" data-title="Moments of Growth"
-            data-info="My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.">
-        </a-octahedron>
-
-        <a-cone class="clickable" position="3.5 2 -4" radius-bottom="0.8" height="1.6" color="#FFE66D"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 5000" data-title="Fuel for the Soul"
-            data-info="Podcasts and music kept me company, fueling resilience and hope.">
-        </a-cone>
-
-        <a-torus class="clickable" position="8 1.5 -5" radius="0.7" radius-tubular="0.2" color="#A8E6CF"
-            animation="property: rotation; to: 360 0 360; loop: true; dur: 6000" data-title="Light on My Journey"
-            data-info="The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product-based company, blending UI/UX design with development and letting my ambitions soar.">
-        </a-torus>
-
-        <!-- Ground -->
-        <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#2d2d2d"></a-plane>
     </a-scene>
 
     <script>
-        let lastIntersectedEl = null;
+        // Enable background music on first user click (browser policy fix)
+        window.addEventListener('click', function enableAudio() {
+            var audio = document.getElementById('bg-music');
+            if (audio && audio.paused) {
+                audio.play();
+                window.removeEventListener('click', enableAudio);
+            }
+        });
 
-        function closeOverlay() {
-            console.log('Overlay closed');
-            document.getElementById('overlay').style.display = 'none';
+        const sceneEl = document.querySelector('a-scene');
+        const modelEl = document.querySelector('#model');
+        const cameraEl = document.querySelector('#cameraRig');
+        const zoomButtons = document.querySelectorAll('.zoomButton');
+        const backButton = document.getElementById('backButton');
+        const storyOverlay = document.getElementById('storyOverlay');
+        const clickableObjects = {};
+
+        const defaultCameraPos = new THREE.Vector3(0, 4, 10);
+        const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+
+        const zoomDistances = {
+            'Speaker_1': 3,
+            'Cube011_1': 4,
+            'default': 3.5
+        };
+
+        function showStory(text) {
+            storyOverlay.innerHTML = text;
+            storyOverlay.style.display = "block";
+            console.log("showStory called with text:", text);
+        }
+        function hideStory() {
+            storyOverlay.style.display = "none";
         }
 
-        function updateStoryHeader(title, subtitle) {
-            document.getElementById('story-title').textContent = title;
-            document.getElementById('story-subtitle').textContent = subtitle;
+        // Super robust story function!
+        function showStoryForMesh(meshName) {
+            if (!meshName) return;
+            const lower = meshName.toLowerCase();
+            console.log("showStoryForMesh called with:", meshName);
+
+            if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
+                showStory("🛏️ <b>The Bed</b><br>Balancing motherhood and ambition—my journey was about family as much as career.");
+            } else if (lower.includes("monitor")) {
+                showStory("💻 <b>The Monitor</b><br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+            } else if (lower.includes("plant")) {
+                showStory("🪴 <b>The Plant</b><br>Roots take time. I was growing quietly in a new city, finding my place.");
+            } else if (lower.includes("rack")) {
+                showStory("🎬 <b>The YouTube Frame</b><br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
+            } else if (lower.includes("cylinder")) {
+                showStory("🖼️ <b>The Wall Frame</b><br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
+            } else if (lower.includes("speaker")) {
+                showStory("🔊 <b>The Speaker</b><br>Podcasts and music kept me company, fueling resilience and hope.");
+            } else if (lower.includes("cube011")) {
+                showStory("💡 <b>The Light</b><br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
+            } else if (lower.includes("cube")) {
+                showStory("🟪 <b>Cube Object</b><br>This is a generic cube in your scene.");
+            } else {
+                showStory("✨ <b>Something in My Room</b><br>This object is part of the story, but not a main scene highlight. Explore more!");
+            }
         }
 
-        function showOverlay(title, info) {
-            console.log('Showing overlay for:', title);
-            document.getElementById('overlay-text').innerHTML = `<strong>${title}</strong><br><br>${info}`;
-            document.getElementById('overlay').style.display = 'block';
-        }
+        // Disable buttons initially
+        zoomButtons.forEach(button => {
+            button.classList.remove('enabled');
+        });
 
-        // Update hovered object every frame using a custom component
-        AFRAME.registerComponent('cursor-tracker', {
-            tick: function () {
-                const intersections = this.el.components.raycaster?.intersections || [];
-                if (intersections.length > 0) {
-                    const el = intersections[0].object.el;
-                    if (el && el.classList.contains('clickable')) {
-                        if (lastIntersectedEl !== el) {
-                            lastIntersectedEl = el;
-                            console.log('Now hovering:', el.getAttribute('data-title'));
-                        }
-                    }
+        // After model loads, map mesh names for click events
+        modelEl.addEventListener('model-loaded', () => {
+            const model = modelEl.getObject3D('mesh');
+            model.traverse(node => {
+                if (node.isMesh) {
+                    clickableObjects[node.name] = node;
+                    node.userData.clickable = true;
                 }
+            });
+            zoomButtons.forEach(button => {
+                button.classList.add('enabled');
+            });
+
+            setTimeout(() => {
+                showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
+            }, 700);
+        });
+
+        // UI button interactions
+        zoomButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (!button.classList.contains('enabled')) return;
+                const meshName = button.dataset.target;
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            });
+        });
+
+        // VR controller and desktop click handling
+        modelEl.addEventListener('click', function (evt) {
+            let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
+            console.log("VR/Mesh Click detected. Name:", meshName);
+            if (!meshName) return;
+            focusOnObject(meshName);
+            showStoryForMesh(meshName);
+        });
+
+        // Desktop mouse picking on scene background (for completeness)
+        sceneEl.addEventListener('click', (e) => {
+            if (e.target.closest('#buttons, #backButton')) return;
+            const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
+            if (!intersection) return;
+            const clickedName = intersection.object.name;
+            focusOnObject(clickedName);
+            showStoryForMesh(clickedName);
+        });
+
+        // Camera movement logic
+        function focusOnObject(meshName) {
+            const cam3D = cameraEl.object3D;
+            const targetMesh = clickableObjects[meshName];
+            if (!targetMesh) {
+                alert("Object not found: " + meshName);
+                return;
             }
-        });
+            const box = new THREE.Box3().setFromObject(targetMesh);
+            const center = box.getCenter(new THREE.Vector3());
+            let newCameraPos, lookAtTarget;
+            const lower = meshName.toLowerCase();
 
-        window.addEventListener('click', () => {
-            const isVR = AFRAME.scenes[0].is('vr-mode');
-            if (!isVR && lastIntersectedEl) {
-                const title = lastIntersectedEl.getAttribute('data-title');
-                const info = lastIntersectedEl.getAttribute('data-info');
-                console.log('Clicked:', title);
-
-                updateStoryHeader(title, info);
-                showOverlay(title, info);
-
-                lastIntersectedEl.setAttribute('animation__click', 'property: scale; to: 0.8 0.8 0.8; dur: 200');
-                setTimeout(() => {
-                    lastIntersectedEl.setAttribute('animation__click', 'property: scale; to: 1 1 1; dur: 200');
-                }, 200);
+            if (lower.includes('cylinder')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 5));
+                lookAtTarget = center.clone();
             }
+            else if (lower.includes('bed')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 8, 0));
+                lookAtTarget = center.clone();
+            }
+            else if (lower.includes('cube011')) {
+                newCameraPos = center.clone().add(new THREE.Vector3(0, 0, 4));
+                lookAtTarget = center.clone();
+            }
+            else {
+                const direction = center.clone().sub(cam3D.position).normalize();
+                const zoomDistance = zoomDistances[meshName] || zoomDistances['default'];
+                newCameraPos = center.clone().add(direction.multiplyScalar(-zoomDistance));
+                lookAtTarget = center.clone();
+            }
+
+            new TWEEN.Tween(cam3D.position)
+                .to({ x: newCameraPos.x, y: newCameraPos.y, z: newCameraPos.z }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+
+            const temp = { t: 0 };
+            const startQuat = cam3D.quaternion.clone();
+            const endQuat = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(newCameraPos, lookAtTarget, new THREE.Vector3(0, 1, 0))
+            );
+
+            new TWEEN.Tween(temp)
+                .to({ t: 1 }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate(() => {
+                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
+                })
+                .start();
+
+            backButton.style.display = "block";
+        }
+
+        backButton.addEventListener('click', () => {
+            const cam3D = cameraEl.object3D;
+            new TWEEN.Tween(cam3D.position)
+                .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+            const temp = { t: 0 };
+            const startQuat = cam3D.quaternion.clone();
+            const endQuat = defaultCameraQuat.clone();
+            new TWEEN.Tween(temp)
+                .to({ t: 1 }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate(() => {
+                    cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
+                })
+                .start();
+            backButton.style.display = "none";
+            hideStory();
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('closeBtn').addEventListener('click', closeOverlay);
-        });
+        function animate() { requestAnimationFrame(animate); TWEEN.update(); }
+        animate();
     </script>
 </body>
 
