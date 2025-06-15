@@ -79,19 +79,6 @@
             letter-spacing: 0.03em;
             pointer-events: none;
         }
-
-        /* VR Text Panel Styles */
-        .vr-text-panel {
-            width: 4;
-            height: 2;
-            background-color: rgba(34, 40, 49, 0.95);
-            color: white;
-            padding: 0.2;
-            border-radius: 0.1;
-            font-size: 0.15;
-            text-align: center;
-            visible: false;
-        }
     </style>
 </head>
 
@@ -118,92 +105,23 @@
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
-        <!-- VR Text Panel with proper rounded corners -->
+        <!-- Improved VR Text Panel with rounded corners -->
         <a-entity id="vrTextPanel" position="0 2 -3" visible="false">
-
-            <!-- Main background panel -->
-            <a-entity geometry="primitive: plane; width: 9; height: 2.4"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 0 0">
+            <!-- Background with rounded corners using multiple planes -->
+            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 8; height: 3"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
             </a-entity>
-
-            <!-- Rounded corners using spheres -->
-            <a-entity geometry="primitive: sphere; radius: 0.2"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="4.3 1.0 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.2"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="-4.3 1.0 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.2"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="4.3 -1.0 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.2"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="-4.3 -1.0 0.001"></a-entity>
-
-            <!-- Edge fillers for rounded appearance -->
-            <a-entity geometry="primitive: plane; width: 0.4; height: 2.4"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="4.3 0 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 0.4; height: 2.4"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="-4.3 0 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 9; height: 0.4"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="0 1.0 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 9; height: 0.4"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
-                position="0 -1.0 0.001"></a-entity>
-
-            <!-- Emoji and Title at the top with better contrast -->
-            <a-text id="vrEmojiTitle" value="" color="#ffffff" align="center" width="8" font="roboto"
-                position="0 0.6 0.02" letter-spacing="2" geometry="primitive: plane; width: 8; height: 0.8"
-                material="color: rgba(0,0,0,0.3); transparent: true; shader: flat">
-            </a-text>
-
-            <!-- Main content text below with better wrapping -->
-            <a-text id="vrContentText" value="" color="#ffffff" align="center" width="7" font="roboto"
-                position="0 -0.2 0.02" letter-spacing="1" line-height="60" wrap-count="45">
+            <!-- Text content -->
+            <a-text id="vrPanelText" value="" color="#ffffff" align="center" width="12" font="roboto" letter-spacing="1"
+                line-height="50" wrap-count="50" position="0 0 0">
             </a-text>
         </a-entity>
 
-        <!-- VR Back Button with proper rounded corners -->
-        <a-entity id="vrBackButton" position="0 0.3 -3" visible="false" class="clickable">
-
-            <!-- Main button background -->
-            <a-entity geometry="primitive: plane; width: 1.6; height: 0.6"
-                material="color: #ffffff; opacity: 0.95; shader: flat" position="0 0 0">
-            </a-entity>
-
-            <!-- Rounded corners -->
-            <a-entity geometry="primitive: sphere; radius: 0.15"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="0.65 0.15 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.15"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="-0.65 0.15 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.15"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="0.65 -0.15 0.001"></a-entity>
-            <a-entity geometry="primitive: sphere; radius: 0.15"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="-0.65 -0.15 0.001"></a-entity>
-
-            <!-- Edge fillers -->
-            <a-entity geometry="primitive: plane; width: 0.3; height: 0.6"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="0.65 0 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 0.3; height: 0.6"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="-0.65 0 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 1.6; height: 0.3"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="0 0.15 0.001"></a-entity>
-            <a-entity geometry="primitive: plane; width: 1.6; height: 0.3"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
-                position="0 -0.15 0.001"></a-entity>
-
-            <a-text value="← Back" color="#000000" align="center" width="12" font="roboto" position="0 0 0.02">
-            </a-text>
+        <!-- Improved VR Back Button -->
+        <a-entity id="vrBackButton" geometry="primitive: plane; width: 2; height: 0.8"
+            material="color: #ffffff; opacity: 0.9; shader: flat"
+            text="value: ← Back; color: #222831; align: center; width: 15; font: roboto; font-weight: bold"
+            position="0 0.2 -2.9" visible="false" class="clickable">
         </a-entity>
 
         <a-assets>
@@ -214,20 +132,20 @@
 
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
-            <!-- Enhanced VR Controllers with proper raycaster setup including VR back button -->
+            <!-- VR Controllers with enhanced raycaster -->
             <a-entity id="rightController" laser-controls="hand: right"
-                raycaster="objects: #model, #vrBackButton; recursive: true; far: 50"
+                raycaster="objects: .clickable; recursive: true; far: 50; lineColor: red; lineOpacity: 0.5"
                 line="color: #ff0000; opacity: 0.8; visible: true">
             </a-entity>
             <a-entity id="leftController" laser-controls="hand: left"
-                raycaster="objects: #model, #vrBackButton; recursive: true; far: 50"
+                raycaster="objects: .clickable; recursive: true; far: 50; lineColor: blue; lineOpacity: 0.5"
                 line="color: #0066ff; opacity: 0.8; visible: true">
             </a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // Enable background music on first user click (browser policy fix)
+        // Enable background music on first user click
         window.addEventListener('click', function enableAudio() {
             var audio = document.getElementById('bg-music');
             if (audio && audio.paused) {
@@ -243,9 +161,8 @@
         const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
         const vrTextPanel = document.getElementById('vrTextPanel');
+        const vrPanelText = document.getElementById('vrPanelText');
         const vrBackButton = document.getElementById('vrBackButton');
-        const vrEmojiTitle = document.getElementById('vrEmojiTitle');
-        const vrContentText = document.getElementById('vrContentText');
         const rightController = document.getElementById('rightController');
         const leftController = document.getElementById('leftController');
         const clickableObjects = {};
@@ -260,55 +177,6 @@
             'Speaker_1': 3,
             'Cube011_1': 4,
             'default': 3.5
-        };
-
-        // Story data with emoji and content separated
-        const storyData = {
-            bed: {
-                emoji: "🛏️",
-                title: "The Bed",
-                content: "Balancing motherhood and ambition—my journey was about family as much as career."
-            },
-            monitor: {
-                emoji: "💻",
-                title: "The Monitor",
-                content: "Countless late nights learning, coding, and applying for jobs. Every click was a step forward."
-            },
-            plant: {
-                emoji: "🪴",
-                title: "The Plant",
-                content: "Roots take time. I was growing quietly in a new city, finding my place."
-            },
-            rack: {
-                emoji: "🎬",
-                title: "The YouTube Frame",
-                content: "YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen."
-            },
-            cylinder: {
-                emoji: "🖼️",
-                title: "The Wall Frame",
-                content: "My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams."
-            },
-            speaker: {
-                emoji: "🔊",
-                title: "The Speaker",
-                content: "Podcasts and music kept me company, fueling resilience and hope."
-            },
-            cube011: {
-                emoji: "💡",
-                title: "The Light",
-                content: "The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar."
-            },
-            cube: {
-                emoji: "🟪",
-                title: "Cube Object",
-                content: "This is a generic cube in your scene."
-            },
-            default: {
-                emoji: "✨",
-                title: "Something in My Room",
-                content: "This object is part of the story, but not a main scene highlight. Explore more!"
-            }
         };
 
         // Detect VR mode changes
@@ -326,15 +194,29 @@
 
         function showStory(text) {
             if (isInVR) {
-                // This function is kept for compatibility but now uses showStoryForMesh for VR
-                storyOverlay.innerHTML = text;
-                storyOverlay.style.display = "block";
+                // Better text processing for VR - preserve emojis and format nicely
+                let cleanText = text.replace(/<[^>]*>/g, ''); // Remove HTML tags but keep emojis
+                cleanText = cleanText.replace(/—/g, ' - '); // Replace em dashes
+
+                // Split into lines and format
+                const lines = cleanText.split('<br>').join('\n').split('\n').filter(line => line.trim());
+                let formattedText = '';
+
+                if (lines.length > 0) {
+                    formattedText = lines.join('\n\n');
+                }
+
+                // Update VR text panel
+                vrPanelText.setAttribute('value', formattedText);
+                vrTextPanel.setAttribute('visible', true);
+                vrBackButton.setAttribute('visible', true);
+
+                console.log('VR Story shown:', formattedText);
             } else {
                 // Show desktop overlay
                 storyOverlay.innerHTML = text;
                 storyOverlay.style.display = "block";
             }
-            console.log("showStory called with text:", text);
         }
 
         function hideStory() {
@@ -346,46 +228,29 @@
             }
         }
 
-        // Enhanced story function for VR with proper emoji and text separation
         function showStoryForMesh(meshName) {
             if (!meshName) return;
             const lower = meshName.toLowerCase();
             console.log("showStoryForMesh called with:", meshName);
 
-            let storyInfo;
-
             if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
-                storyInfo = storyData.bed;
+                showStory("🛏️ The Bed<br>Balancing motherhood and ambition—my journey was about family as much as career.");
             } else if (lower.includes("monitor")) {
-                storyInfo = storyData.monitor;
+                showStory("💻 The Monitor<br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
             } else if (lower.includes("plant")) {
-                storyInfo = storyData.plant;
+                showStory("🪴 The Plant<br>Roots take time. I was growing quietly in a new city, finding my place.");
             } else if (lower.includes("rack")) {
-                storyInfo = storyData.rack;
+                showStory("🎬 The YouTube Frame<br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
             } else if (lower.includes("cylinder")) {
-                storyInfo = storyData.cylinder;
+                showStory("🖼️ The Wall Frame<br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
             } else if (lower.includes("speaker")) {
-                storyInfo = storyData.speaker;
+                showStory("🔊 The Speaker<br>Podcasts and music kept me company, fueling resilience and hope.");
             } else if (lower.includes("cube011")) {
-                storyInfo = storyData.cube011;
+                showStory("💡 The Light<br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
             } else if (lower.includes("cube")) {
-                storyInfo = storyData.cube;
+                showStory("🟪 Cube Object<br>This is a generic cube in your scene.");
             } else {
-                storyInfo = storyData.default;
-            }
-
-            if (isInVR) {
-                // Show VR text panel with emoji at top, content below
-                // Format with larger emoji and spaced title
-                vrEmojiTitle.setAttribute('value', `${storyInfo.emoji}   ${storyInfo.title}`);
-                vrContentText.setAttribute('value', storyInfo.content);
-                vrTextPanel.setAttribute('visible', true);
-                vrBackButton.setAttribute('visible', true);
-                console.log("VR panel shown with:", storyInfo.emoji, storyInfo.title);
-            } else {
-                // Show desktop overlay with HTML formatting
-                const htmlText = `${storyInfo.emoji} <b>${storyInfo.title}</b><br>${storyInfo.content}`;
-                showStory(htmlText);
+                showStory("✨ Something in My Room<br>This object is part of the story, but not a main scene highlight. Explore more!");
             }
         }
 
@@ -394,21 +259,16 @@
             button.classList.remove('enabled');
         });
 
-        // After model loads, map mesh names for click events and make them clickable
+        // After model loads, setup interactions
         modelEl.addEventListener('model-loaded', () => {
             const model = modelEl.getObject3D('mesh');
             model.traverse(node => {
                 if (node.isMesh) {
                     clickableObjects[node.name] = node;
                     node.userData.clickable = true;
-                    // Add clickable class to the mesh for raycaster detection
-                    if (node.el) {
-                        node.el.classList.add('clickable');
-                    }
                 }
             });
 
-            // Also make the entire model clickable for VR
             modelEl.classList.add('clickable');
 
             zoomButtons.forEach(button => {
@@ -416,13 +276,7 @@
             });
 
             setTimeout(() => {
-                if (isInVR) {
-                    vrEmojiTitle.setAttribute('value', "🌱   A New City, A New Start");
-                    vrContentText.setAttribute('value', "My Hyper Island journey began here, where everything felt new and full of hope.");
-                    vrTextPanel.setAttribute('visible', true);
-                } else {
-                    showStory("🌱 <b>A New City, A New Start</b><br><span style='font-size:1rem;opacity:0.82'>My Hyper Island journey began here, where everything felt new and full of hope.</span>");
-                }
+                showStory("🌱 A New City, A New Start<br>My Hyper Island journey began here, where everything felt new and full of hope.");
             }, 700);
         });
 
@@ -436,67 +290,55 @@
             });
         });
 
-        // Enhanced VR controller event handling
+        // Enhanced VR back button handling
+        vrBackButton.addEventListener('click', function (evt) {
+            console.log('VR Back button clicked');
+            resetCamera();
+        });
+
+        // VR Controller event handling
         function setupControllerEvents(controller) {
-            // Handle trigger press events
             controller.addEventListener('triggerdown', function (evt) {
                 console.log('VR trigger pressed');
-                handleVRInteraction(controller);
+                handleVRInteraction(evt);
             });
 
-            // Handle trigger up events  
-            controller.addEventListener('triggerup', function (evt) {
-                console.log('VR trigger released');
-            });
-
-            // Handle grip press for alternative interaction
-            controller.addEventListener('gripdown', function (evt) {
-                console.log('VR grip pressed');
-                handleVRInteraction(controller);
+            controller.addEventListener('click', function (evt) {
+                console.log('VR controller click');
+                handleVRInteraction(evt);
             });
         }
 
-        function handleVRInteraction(controller) {
-            const raycaster = controller.components.raycaster;
-            if (!raycaster) {
-                console.log('No raycaster found on controller');
+        function handleVRInteraction(evt) {
+            if (!evt.detail || !evt.detail.intersection) {
+                console.log('No intersection details');
                 return;
             }
 
-            const intersections = raycaster.intersections;
-            console.log('VR intersections found:', intersections.length);
+            const intersection = evt.detail.intersection;
+            const intersectedEl = intersection.object.el;
 
-            if (intersections.length > 0) {
-                const intersection = intersections[0];
-                console.log('First intersection:', intersection);
+            // Check if clicking VR back button
+            if (intersectedEl === vrBackButton) {
+                console.log('VR Back button triggered');
+                resetCamera();
+                return;
+            }
 
-                // Check if it's the VR back button
-                if (intersection.object.el && intersection.object.el.id === 'vrBackButton') {
-                    console.log('VR Back button triggered via intersection');
-                    resetCamera();
-                    return;
+            // Handle model interactions
+            let meshName = intersection.object.name;
+            if (!meshName && intersection.object.parent) {
+                let current = intersection.object;
+                while (current && !meshName) {
+                    meshName = current.name;
+                    current = current.parent;
                 }
+            }
 
-                // Check if it's part of the model
-                let meshName = intersection.object.name;
-                if (!meshName && intersection.object.parent) {
-                    // Try to find mesh name in parent hierarchy
-                    let current = intersection.object;
-                    while (current && !meshName) {
-                        meshName = current.name;
-                        current = current.parent;
-                    }
-                }
-
-                console.log("VR interaction with mesh:", meshName);
-                if (meshName && clickableObjects[meshName]) {
-                    focusOnObject(meshName);
-                    showStoryForMesh(meshName);
-                } else {
-                    console.log('No valid mesh name found for interaction');
-                }
-            } else {
-                console.log('No intersections found');
+            console.log("VR interaction with mesh:", meshName);
+            if (meshName && clickableObjects[meshName]) {
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
             }
         }
 
@@ -504,47 +346,9 @@
         setupControllerEvents(rightController);
         setupControllerEvents(leftController);
 
-        // VR Back Button functionality
-        vrBackButton.addEventListener('triggerdown', () => {
-            console.log('VR Back button trigger pressed');
-            resetCamera();
-        });
-
-        vrBackButton.addEventListener('click', () => {
-            console.log('VR Back button clicked');
-            resetCamera();
-        });
-
-        // Enhanced click handling for VR controllers
-        rightController.addEventListener('click', function (evt) {
-            console.log('Right controller click event');
-            handleVRClick(evt);
-        });
-
-        leftController.addEventListener('click', function (evt) {
-            console.log('Left controller click event');
-            handleVRClick(evt);
-        });
-
-        function handleVRClick(evt) {
-            console.log('VR Click event triggered');
-
-            // Check if clicking the VR back button
-            if (evt.detail.intersection && evt.detail.intersection.object &&
-                evt.detail.intersection.object.el === vrBackButton) {
-                console.log('VR back button clicked');
-                resetCamera();
-                return;
-            }
-
-            // Get the controller that triggered the event
-            const controller = evt.target;
-            handleVRInteraction(controller);
-        }
-
-        // Desktop click handling (unchanged)
+        // Desktop click handling
         modelEl.addEventListener('click', function (evt) {
-            if (isInVR) return; // Skip desktop clicks in VR mode
+            if (isInVR) return;
             let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
             console.log("Desktop Click detected. Name:", meshName);
             if (!meshName) return;
@@ -552,9 +356,9 @@
             showStoryForMesh(meshName);
         });
 
-        // Desktop mouse picking on scene background
+        // Desktop scene click handling
         sceneEl.addEventListener('click', (e) => {
-            if (isInVR) return; // Skip desktop clicks in VR mode
+            if (isInVR) return;
             if (e.target.closest('#buttons, #backButton')) return;
             const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
             if (!intersection) return;
