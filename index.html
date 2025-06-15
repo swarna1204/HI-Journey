@@ -105,15 +105,26 @@
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
-        <!-- Improved VR Text Panel with rounded corners -->
+        <!-- Enhanced VR Text Panel with title and body text separation -->
         <a-entity id="vrTextPanel" position="0 2 -3" visible="false">
-            <!-- Background with rounded corners using multiple planes -->
-            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 12; height: 3"
+            <!-- Background with rounded corners -->
+            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 14; height: 4"
                 material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
             </a-entity>
-            <!-- Text content -->
-            <a-text id="vrPanelText" value="" color="#ffffff" align="center" width="12" font="roboto" letter-spacing="1"
-                line-height="50" wrap-count="50" position="0 0 0">
+
+            <!-- Emoji and Title section -->
+            <a-text id="vrPanelEmoji" value="🪴" color="#4CAF50" align="center" width="20" font="roboto"
+                position="0 1.2 0.001">
+            </a-text>
+
+            <a-text id="vrPanelTitle" value="The Plant" color="#ffffff" align="center" width="16" font="roboto"
+                font-weight="bold" letter-spacing="2" position="0 0.6 0.001">
+            </a-text>
+
+            <!-- Body text section -->
+            <a-text id="vrPanelBody" value="Roots take time. I was growing quietly in a new city, finding my place."
+                color="#cccccc" align="center" width="12" font="roboto" letter-spacing="1" line-height="50"
+                wrap-count="50" position="0 -0.4 0.001">
             </a-text>
         </a-entity>
 
@@ -161,7 +172,9 @@
         const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
         const vrTextPanel = document.getElementById('vrTextPanel');
-        const vrPanelText = document.getElementById('vrPanelText');
+        const vrPanelEmoji = document.getElementById('vrPanelEmoji');
+        const vrPanelTitle = document.getElementById('vrPanelTitle');
+        const vrPanelBody = document.getElementById('vrPanelBody');
         const vrBackButton = document.getElementById('vrBackButton');
         const rightController = document.getElementById('rightController');
         const leftController = document.getElementById('leftController');
@@ -179,6 +192,55 @@
             'default': 3.5
         };
 
+        // Story data for each object
+        const storyData = {
+            bed: {
+                emoji: "🛏️",
+                title: "The Bed",
+                body: "Balancing motherhood and ambition—my journey was about family as much as career."
+            },
+            monitor: {
+                emoji: "💻",
+                title: "The Monitor",
+                body: "Countless late nights learning, coding, and applying for jobs. Every click was a step forward."
+            },
+            plant: {
+                emoji: "🪴",
+                title: "The Plant",
+                body: "Roots take time. I was growing quietly in a new city, finding my place."
+            },
+            rack: {
+                emoji: "🎬",
+                title: "The YouTube Frame",
+                body: "YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen."
+            },
+            cylinder: {
+                emoji: "🖼️",
+                title: "The Wall Frame",
+                body: "My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams."
+            },
+            speaker: {
+                emoji: "🔊",
+                title: "The Speaker",
+                body: "Podcasts and music kept me company, fueling resilience and hope."
+            },
+            cube011: {
+                emoji: "💡",
+                title: "The Light",
+                body: "The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar."
+            },
+            default: {
+                emoji: "✨",
+                title: "Something in My Room",
+                body: "This object is part of the story, but not a main scene highlight. Explore more!"
+            },
+            intro: {
+                emoji: "🌱",
+                title: "A New City, A New Start",
+                body: "My Hyper Island journey began here, where everything felt new and full of hope."
+            }
+        };
+
         // Detect VR mode changes
         sceneEl.addEventListener('enter-vr', () => {
             isInVR = true;
@@ -194,29 +256,32 @@
 
         function showStory(text) {
             if (isInVR) {
-                // Better text processing for VR - preserve emojis and format nicely
-                let cleanText = text.replace(/<[^>]*>/g, ''); // Remove HTML tags but keep emojis
-                cleanText = cleanText.replace(/—/g, ' - '); // Replace em dashes
-
-                // Split into lines and format
-                const lines = cleanText.split('<br>').join('\n').split('\n').filter(line => line.trim());
-                let formattedText = '';
-
-                if (lines.length > 0) {
-                    formattedText = lines.join('\n\n');
-                }
-
-                // Update VR text panel
-                vrPanelText.setAttribute('value', formattedText);
-                vrTextPanel.setAttribute('visible', true);
-                vrBackButton.setAttribute('visible', true);
-
-                console.log('VR Story shown:', formattedText);
+                // This function is kept for compatibility but won't be used for VR
+                // VR now uses showStoryForMesh directly
+                storyOverlay.innerHTML = text;
+                storyOverlay.style.display = "block";
             } else {
                 // Show desktop overlay
                 storyOverlay.innerHTML = text;
                 storyOverlay.style.display = "block";
             }
+        }
+
+        function showVRStory(storyKey) {
+            if (!isInVR) return;
+
+            const story = storyData[storyKey] || storyData.default;
+
+            // Update VR panel components
+            vrPanelEmoji.setAttribute('value', story.emoji);
+            vrPanelTitle.setAttribute('value', story.title);
+            vrPanelBody.setAttribute('value', story.body);
+
+            // Show the panel
+            vrTextPanel.setAttribute('visible', true);
+            vrBackButton.setAttribute('visible', true);
+
+            console.log('VR Story shown:', story.title);
         }
 
         function hideStory() {
@@ -233,24 +298,40 @@
             const lower = meshName.toLowerCase();
             console.log("showStoryForMesh called with:", meshName);
 
+            let storyKey = 'default';
+            let htmlText = '';
+
             if (lower.includes("bed") || lower.includes("blanket") || lower.includes("pillow")) {
-                showStory("🛏️ The Bed<br>Balancing motherhood and ambition—my journey was about family as much as career.");
+                storyKey = 'bed';
+                htmlText = "🛏️ The Bed<br>Balancing motherhood and ambition—my journey was about family as much as career.";
             } else if (lower.includes("monitor")) {
-                showStory("💻 The Monitor<br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.");
+                storyKey = 'monitor';
+                htmlText = "💻 The Monitor<br>Countless late nights learning, coding, and applying for jobs. Every click was a step forward.";
             } else if (lower.includes("plant")) {
-                showStory("🪴 The Plant<br>Roots take time. I was growing quietly in a new city, finding my place.");
+                storyKey = 'plant';
+                htmlText = "🪴 The Plant<br>Roots take time. I was growing quietly in a new city, finding my place.";
             } else if (lower.includes("rack")) {
-                showStory("🎬 The YouTube Frame<br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.");
+                storyKey = 'rack';
+                htmlText = "🎬 The YouTube Frame<br>YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.";
             } else if (lower.includes("cylinder")) {
-                showStory("🖼️ The Wall Frame<br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.");
+                storyKey = 'cylinder';
+                htmlText = "🖼️ The Wall Frame<br>My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.";
             } else if (lower.includes("speaker")) {
-                showStory("🔊 The Speaker<br>Podcasts and music kept me company, fueling resilience and hope.");
+                storyKey = 'speaker';
+                htmlText = "🔊 The Speaker<br>Podcasts and music kept me company, fueling resilience and hope.";
             } else if (lower.includes("cube011")) {
-                showStory("💡 The Light<br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.");
+                storyKey = 'cube011';
+                htmlText = "💡 The Light<br>The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product based company, blending UI/UX design with development and letting my ambitions soar.";
             } else if (lower.includes("cube")) {
-                showStory("🟪 Cube Object<br>This is a generic cube in your scene.");
+                htmlText = "🟪 Cube Object<br>This is a generic cube in your scene.";
             } else {
-                showStory("✨ Something in My Room<br>This object is part of the story, but not a main scene highlight. Explore more!");
+                htmlText = "✨ Something in My Room<br>This object is part of the story, but not a main scene highlight. Explore more!";
+            }
+
+            if (isInVR) {
+                showVRStory(storyKey);
+            } else {
+                showStory(htmlText);
             }
         }
 
@@ -276,7 +357,11 @@
             });
 
             setTimeout(() => {
-                showStory("🌱 A New City, A New Start<br>My Hyper Island journey began here, where everything felt new and full of hope.");
+                if (isInVR) {
+                    showVRStory('intro');
+                } else {
+                    showStory("🌱 A New City, A New Start<br>My Hyper Island journey began here, where everything felt new and full of hope.");
+                }
             }, 700);
         });
 
