@@ -1,61 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
     <meta charset="utf-8" />
-    <title>Scene 1 — The Seed</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <title>Interactive A-Frame Scene — Final Fixed</title>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+
+        #overlay button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #story-header {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #story-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            background: linear-gradient(45deg, #4CC3D9, #FFE66D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #story-subtitle {
+            font-size: 16px;
+            margin: 0;
+            color: #cccccc;
+            font-style: italic;
+        }
+
+        #controls-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
 </head>
 
 <body>
-    <a-scene background="color: #111" cursor="rayOrigin: mouse" raycaster="objects: .clickable">
+    <div id="story-header">
+        <h1 id="story-title">A New City, A New Start</h1>
+        <p id="story-subtitle">My Hyper Island journey began here, where everything felt new and full of hope</p>
+    </div>
 
-        <!-- Ground / Soil -->
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="20" height="20" color="#4b3d2a"></a-plane>
+    <div id="overlay">
+        <div id="overlay-text"></div>
+        <button id="closeBtn">Close</button>
+    </div>
 
-        <!-- Glowing, Floating Yellow Seed -->
-        <a-sphere id="seed" position="0 0.5 -3" radius="0.3" color="#ffe600" class="clickable"
-            material="emissive: #ffe600; emissiveIntensity: 0.6">
-            <!-- Floating animation -->
-            <a-animation attribute="position" direction="alternate" dur="1500" to="0 0.7 -3" repeat="indefinite"
-                easing="ease-in-out">
-            </a-animation>
+    <div id="controls-info">
+        Mouse: Look around | WASD: Move | Click: Interact with objects
+    </div>
+
+    <a-scene background="color: #1a1a2e" vr-mode-ui="enabled: true">
+        <a-entity camera position="0 2 5" look-controls wasd-controls>
+            <a-cursor id="mouseCursor" rayOrigin="mouse" fuse="false" raycaster="objects: .clickable"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" material="color: white; shader: flat"
+                cursor-tracker>
+            </a-cursor>
+        </a-entity>
+
+        <!-- Lights -->
+        <a-light type="ambient" color="#404040"></a-light>
+        <a-light type="directional" position="5 5 5"></a-light>
+
+        <!-- Clickable Story Objects -->
+        <a-box class="clickable" position="-8 1.5 -5" color="#4CC3D9" scale="0.8 0.8 0.8"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 4000" data-title="Balancing Life & Dreams"
+            data-info="Balancing motherhood and ambition—my journey was about family as much as career.">
+        </a-box>
+
+        <a-sphere class="clickable" position="-5.25 1.35 -6" radius="0.7" color="#FF6B6B"
+            animation="property: position; to: -5.25 1.85 -6; dir: alternate; loop: true; dur: 2000"
+            data-title="Sleepless Dedication"
+            data-info="Countless late nights learning, coding, and applying for jobs. Every click was a step forward.">
         </a-sphere>
 
-        <!-- Distant City Skyline -->
-        <a-box position="-3 1 -7" depth="1" height="2" width="1" color="#555"></a-box>
-        <a-box position="-2 1.5 -7" depth="1" height="3" width="1" color="#666"></a-box>
-        <a-box position="0 1.2 -7" depth="1" height="2.5" width="1" color="#777"></a-box>
-        <a-box position="2 2 -7" depth="1" height="4" width="1" color="#888"></a-box>
-        <a-box position="3 1.5 -7" depth="1" height="3" width="1" color="#999"></a-box>
+        <a-dodecahedron class="clickable" position="-2.5 1.2 -7" radius="0.7" color="#DDA0DD"
+            animation="property: rotation; to: 360 360 0; loop: true; dur: 8000" data-title="Finding My Roots"
+            data-info="Roots take time. I was growing quietly in a new city, finding my place.">
+        </a-dodecahedron>
 
-        <!-- Floating Story Text -->
-        <a-entity id="storyText" visible="false" position="0 5 -6" text="value: 🌱 A New City, A New Start\nI began again here in Stockholm — jobless, hopeful, uncertain. But full of curiosity.; 
-                    color: white; align: center; width: 4.5; baseline: center;">
-        </a-entity>
+        <a-cylinder class="clickable" position="0 1.8 -9" radius="0.6" height="1.5" color="#4ECDC4"
+            animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 3000"
+            data-title="My Digital Classroom"
+            data-info="YouTube was my classroom and my comfort—where I learned to code, drew inspiration from creators, and found motivation in stories beyond the screen.">
+        </a-cylinder>
 
-        <!-- Camera & Controllers -->
-        <a-entity id="rig" position="0 1.6 0">
-            <a-camera>
-                <a-cursor fuse="false" raycaster="objects: .clickable" material="color: white"
-                    geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" position="0 0 -1">
-                </a-cursor>
-            </a-camera>
+        <a-octahedron class="clickable" position="2.5 1.2 -7" radius="0.8" color="#FFB6C1"
+            animation="property: rotation; to: 0 360 360; loop: true; dur: 7000" data-title="Moments of Growth"
+            data-info="My wall frames capture moments of growth, lessons learned, obstacles faced, and milestones achieved—a daily reminder to pursue my dreams.">
+        </a-octahedron>
 
-            <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .clickable; showLine: true"
-                line="color: #FF4081"></a-entity>
+        <a-cone class="clickable" position="3.5 2 -4" radius-bottom="0.8" height="1.6" color="#FFE66D"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 5000" data-title="Fuel for the Soul"
+            data-info="Podcasts and music kept me company, fueling resilience and hope.">
+        </a-cone>
 
-            <a-entity id="leftHand" oculus-touch-controls="hand: left" raycaster="objects: .clickable; showLine: true"
-                line="color: #00BCD4"></a-entity>
-        </a-entity>
+        <a-torus class="clickable" position="8 1.5 -5" radius="0.7" radius-tubular="0.2" color="#A8E6CF"
+            animation="property: rotation; to: 360 0 360; loop: true; dur: 6000" data-title="Light on My Journey"
+            data-info="The light shines on my journey—filled with vision, hope, and new direction. At Hyper Island, I grew into a front-end developer. Now, I dream of taking my roots and wings to a product-based company, blending UI/UX design with development and letting my ambitions soar.">
+        </a-torus>
+
+        <!-- Ground -->
+        <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#2d2d2d"></a-plane>
     </a-scene>
 
     <script>
-        const seed = document.querySelector('#seed');
-        const story = document.querySelector('#storyText');
+        let lastIntersectedEl = null;
 
-        seed.addEventListener('click', () => {
-            story.setAttribute('visible', true);
+        function closeOverlay() {
+            console.log('Overlay closed');
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function updateStoryHeader(title, subtitle) {
+            document.getElementById('story-title').textContent = title;
+            document.getElementById('story-subtitle').textContent = subtitle;
+        }
+
+        function showOverlay(title, info) {
+            console.log('Showing overlay for:', title);
+            document.getElementById('overlay-text').innerHTML = `<strong>${title}</strong><br><br>${info}`;
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        // Update hovered object every frame using a custom component
+        AFRAME.registerComponent('cursor-tracker', {
+            tick: function () {
+                const intersections = this.el.components.raycaster?.intersections || [];
+                if (intersections.length > 0) {
+                    const el = intersections[0].object.el;
+                    if (el && el.classList.contains('clickable')) {
+                        if (lastIntersectedEl !== el) {
+                            lastIntersectedEl = el;
+                            console.log('Now hovering:', el.getAttribute('data-title'));
+                        }
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('click', () => {
+            const isVR = AFRAME.scenes[0].is('vr-mode');
+            if (!isVR && lastIntersectedEl) {
+                const title = lastIntersectedEl.getAttribute('data-title');
+                const info = lastIntersectedEl.getAttribute('data-info');
+                console.log('Clicked:', title);
+
+                updateStoryHeader(title, info);
+                showOverlay(title, info);
+
+                lastIntersectedEl.setAttribute('animation__click', 'property: scale; to: 0.8 0.8 0.8; dur: 200');
+                setTimeout(() => {
+                    lastIntersectedEl.setAttribute('animation__click', 'property: scale; to: 1 1 1; dur: 200');
+                }, 200);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('closeBtn').addEventListener('click', closeOverlay);
         });
     </script>
 </body>
