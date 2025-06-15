@@ -79,6 +79,19 @@
             letter-spacing: 0.03em;
             pointer-events: none;
         }
+
+        /* VR Text Panel Styles */
+        .vr-text-panel {
+            width: 4;
+            height: 2;
+            background-color: rgba(34, 40, 49, 0.95);
+            color: white;
+            padding: 0.2;
+            border-radius: 0.1;
+            font-size: 0.15;
+            text-align: center;
+            visible: false;
+        }
     </style>
 </head>
 
@@ -97,22 +110,41 @@
     <div id="storyOverlay"></div>
 
     <!-- Background Music: hidden audio, plays on user click -->
-    <audio id="bg-music" src="audio/music.mp3"
-        loop></audio>
+    <audio id="bg-music" src="audio/music.mp3" loop></audio>
 
     <a-scene id="scene" xr-mode-ui="enabled: true" cursor="rayOrigin: mouse" raycaster="objects: .clickable"
         renderer="antialias: true; precision: high;">
         <a-sky color="#222831"></a-sky>
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
+
+        <!-- VR Text Panel for stories in VR mode -->
+        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 4; height: 2"
+            material="color: #222831; opacity: 0.9; transparent: true"
+            text="value: ; color: white; align: center; width: 8; font: roboto" position="0 2 -3" visible="false">
+        </a-entity>
+
+        <!-- VR Back Button -->
+        <a-entity id="vrBackButton" geometry="primitive: plane; width: 1; height: 0.5"
+            material="color: white; opacity: 0.9" text="value: Back; color: black; align: center; width: 10"
+            position="-1.5 0.5 -3" visible="false" class="clickable">
+        </a-entity>
+
         <a-assets>
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
+
         <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
-            <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
-            <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
+            <!-- Enhanced VR Controllers with proper raycaster setup -->
+            <a-entity id="rightController" laser-controls="hand: right"
+                raycaster="objects: .clickable; far: 30; interval: 100" line="color: red; opacity: 0.75">
+            </a-entity>
+            <a-entity id="leftController" laser-controls="hand: left"
+                raycaster="objects: .clickable; far: 30; interval: 100" line="color: blue; opacity: 0.75">
+            </a-entity>
         </a-entity>
     </a-scene>
 
@@ -132,7 +164,14 @@
         const zoomButtons = document.querySelectorAll('.zoomButton');
         const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
+        const vrTextPanel = document.getElementById('vrTextPanel');
+        const vrBackButton = document.getElementById('vrBackButton');
+        const rightController = document.getElementById('rightController');
+        const leftController = document.getElementById('leftController');
         const clickableObjects = {};
+
+        let isInVR = false;
+        let currentFocusedObject = null;
 
         const defaultCameraPos = new THREE.Vector3(0, 4, 10);
         const defaultCameraQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
@@ -143,13 +182,40 @@
             'default': 3.5
         };
 
+        // Detect VR mode changes
+        sceneEl.addEventListener('enter-vr', () => {
+            isInVR = true;
+            console.log('Entered VR mode');
+        });
+
+        sceneEl.addEventListener('exit-vr', () => {
+            isInVR = false;
+            vrTextPanel.setAttribute('visible', false);
+            vrBackButton.setAttribute('visible', false);
+            console.log('Exited VR mode');
+        });
+
         function showStory(text) {
-            storyOverlay.innerHTML = text;
-            storyOverlay.style.display = "block";
+            if (isInVR) {
+                // Show VR text panel
+                vrTextPanel.setAttribute('text', 'value', text.replace(/<[^>]*>/g, '').replace(/🛏️|💻|🪴|🎬|🖼️|🔊|💡|🟪|✨/g, ''));
+                vrTextPanel.setAttribute('visible', true);
+                vrBackButton.setAttribute('visible', true);
+            } else {
+                // Show desktop overlay
+                storyOverlay.innerHTML = text;
+                storyOverlay.style.display = "block";
+            }
             console.log("showStory called with text:", text);
         }
+
         function hideStory() {
-            storyOverlay.style.display = "none";
+            if (isInVR) {
+                vrTextPanel.setAttribute('visible', false);
+                vrBackButton.setAttribute('visible', false);
+            } else {
+                storyOverlay.style.display = "none";
+            }
         }
 
         // Super robust story function!
@@ -212,17 +278,81 @@
             });
         });
 
-        // VR controller and desktop click handling
+        // Enhanced VR controller event handling
+        function setupControllerEvents(controller) {
+            // Handle trigger press events
+            controller.addEventListener('triggerdown', function (evt) {
+                console.log('VR trigger pressed');
+                const intersection = evt.target.components.raycaster.getIntersection(modelEl);
+                if (intersection && intersection.object && intersection.object.name) {
+                    const meshName = intersection.object.name;
+                    console.log("VR Controller triggered object:", meshName);
+                    focusOnObject(meshName);
+                    showStoryForMesh(meshName);
+                }
+            });
+
+            // Handle clickable entity interactions
+            controller.addEventListener('raycaster-intersection', function (evt) {
+                const intersection = evt.detail.intersections[0];
+                if (intersection && intersection.object && intersection.object.name) {
+                    console.log("VR raycaster intersection:", intersection.object.name);
+                }
+            });
+        }
+
+        // Setup both controllers
+        setupControllerEvents(rightController);
+        setupControllerEvents(leftController);
+
+        // VR Back Button functionality
+        vrBackButton.addEventListener('click', () => {
+            console.log('VR Back button clicked');
+            resetCamera();
+        });
+
+        // Enhanced click handling for VR controllers
+        rightController.addEventListener('click', function (evt) {
+            console.log('Right controller click event');
+            handleVRClick(evt);
+        });
+
+        leftController.addEventListener('click', function (evt) {
+            console.log('Left controller click event');
+            handleVRClick(evt);
+        });
+
+        function handleVRClick(evt) {
+            // Check if clicking the VR back button
+            if (evt.detail.intersection && evt.detail.intersection.object &&
+                evt.detail.intersection.object.el === vrBackButton) {
+                resetCamera();
+                return;
+            }
+
+            // Check for model intersection
+            const intersection = evt.target.components.raycaster.getIntersection(modelEl);
+            if (intersection && intersection.object && intersection.object.name) {
+                const meshName = intersection.object.name;
+                console.log("VR Click detected on:", meshName);
+                focusOnObject(meshName);
+                showStoryForMesh(meshName);
+            }
+        }
+
+        // Desktop click handling (unchanged)
         modelEl.addEventListener('click', function (evt) {
+            if (isInVR) return; // Skip desktop clicks in VR mode
             let meshName = evt.detail.intersection && evt.detail.intersection.object && evt.detail.intersection.object.name;
-            console.log("VR/Mesh Click detected. Name:", meshName);
+            console.log("Desktop Click detected. Name:", meshName);
             if (!meshName) return;
             focusOnObject(meshName);
             showStoryForMesh(meshName);
         });
 
-        // Desktop mouse picking on scene background (for completeness)
+        // Desktop mouse picking on scene background
         sceneEl.addEventListener('click', (e) => {
+            if (isInVR) return; // Skip desktop clicks in VR mode
             if (e.target.closest('#buttons, #backButton')) return;
             const intersection = sceneEl.components.raycaster.getIntersection(modelEl);
             if (!intersection) return;
@@ -233,10 +363,11 @@
 
         // Camera movement logic
         function focusOnObject(meshName) {
+            currentFocusedObject = meshName;
             const cam3D = cameraEl.object3D;
             const targetMesh = clickableObjects[meshName];
             if (!targetMesh) {
-                alert("Object not found: " + meshName);
+                console.error("Object not found: " + meshName);
                 return;
             }
             const box = new THREE.Box3().setFromObject(targetMesh);
@@ -282,10 +413,13 @@
                 })
                 .start();
 
-            backButton.style.display = "block";
+            if (!isInVR) {
+                backButton.style.display = "block";
+            }
         }
 
-        backButton.addEventListener('click', () => {
+        function resetCamera() {
+            currentFocusedObject = null;
             const cam3D = cameraEl.object3D;
             new TWEEN.Tween(cam3D.position)
                 .to({ x: defaultCameraPos.x, y: defaultCameraPos.y, z: defaultCameraPos.z }, 1500)
@@ -301,11 +435,20 @@
                     cam3D.quaternion.copy(startQuat).slerp(endQuat, temp.t);
                 })
                 .start();
-            backButton.style.display = "none";
-            hideStory();
-        });
 
-        function animate() { requestAnimationFrame(animate); TWEEN.update(); }
+            if (!isInVR) {
+                backButton.style.display = "none";
+            }
+            hideStory();
+        }
+
+        // Desktop back button
+        backButton.addEventListener('click', resetCamera);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+        }
         animate();
     </script>
 </body>
