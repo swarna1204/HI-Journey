@@ -134,16 +134,18 @@
             <a-asset-item id="roomModel" src="model/model.glb"></a-asset-item>
         </a-assets>
 
-        <a-entity id="model" class="clickable" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
+        <a-entity id="model" gltf-model="#roomModel" position="-5 -10 -5" scale="10 10 10"></a-entity>
 
         <a-entity id="cameraRig" position="0 4 10">
             <a-camera look-controls wasd-controls></a-camera>
             <!-- Enhanced VR Controllers with proper raycaster setup -->
             <a-entity id="rightController" laser-controls="hand: right"
-                raycaster="objects: .clickable; far: 30; interval: 100" line="color: red; opacity: 0.75">
+                raycaster="objects: #model; recursive: true; far: 50"
+                line="color: #ff0000; opacity: 0.8; visible: true">
             </a-entity>
             <a-entity id="leftController" laser-controls="hand: left"
-                raycaster="objects: .clickable; far: 30; interval: 100" line="color: blue; opacity: 0.75">
+                raycaster="objects: #model; recursive: true; far: 50"
+                line="color: #0066ff; opacity: 0.8; visible: true">
             </a-entity>
         </a-entity>
     </a-scene>
@@ -250,15 +252,23 @@
             button.classList.remove('enabled');
         });
 
-        // After model loads, map mesh names for click events
+        // After model loads, map mesh names for click events and make them clickable
         modelEl.addEventListener('model-loaded', () => {
             const model = modelEl.getObject3D('mesh');
             model.traverse(node => {
                 if (node.isMesh) {
                     clickableObjects[node.name] = node;
                     node.userData.clickable = true;
+                    // Add clickable class to the mesh for raycaster detection
+                    if (node.el) {
+                        node.el.classList.add('clickable');
+                    }
                 }
             });
+
+            // Also make the entire model clickable for VR
+            modelEl.classList.add('clickable');
+
             zoomButtons.forEach(button => {
                 button.classList.add('enabled');
             });
@@ -283,22 +293,63 @@
             // Handle trigger press events
             controller.addEventListener('triggerdown', function (evt) {
                 console.log('VR trigger pressed');
-                const intersection = evt.target.components.raycaster.getIntersection(modelEl);
-                if (intersection && intersection.object && intersection.object.name) {
-                    const meshName = intersection.object.name;
-                    console.log("VR Controller triggered object:", meshName);
-                    focusOnObject(meshName);
-                    showStoryForMesh(meshName);
-                }
+                handleVRInteraction(controller);
             });
 
-            // Handle clickable entity interactions
-            controller.addEventListener('raycaster-intersection', function (evt) {
-                const intersection = evt.detail.intersections[0];
-                if (intersection && intersection.object && intersection.object.name) {
-                    console.log("VR raycaster intersection:", intersection.object.name);
-                }
+            // Handle trigger up events  
+            controller.addEventListener('triggerup', function (evt) {
+                console.log('VR trigger released');
             });
+
+            // Handle grip press for alternative interaction
+            controller.addEventListener('gripdown', function (evt) {
+                console.log('VR grip pressed');
+                handleVRInteraction(controller);
+            });
+        }
+
+        function handleVRInteraction(controller) {
+            const raycaster = controller.components.raycaster;
+            if (!raycaster) {
+                console.log('No raycaster found on controller');
+                return;
+            }
+
+            const intersections = raycaster.intersections;
+            console.log('VR intersections found:', intersections.length);
+
+            if (intersections.length > 0) {
+                const intersection = intersections[0];
+                console.log('First intersection:', intersection);
+
+                // Check if it's the VR back button
+                if (intersection.object.el === vrBackButton) {
+                    console.log('VR Back button triggered');
+                    resetCamera();
+                    return;
+                }
+
+                // Check if it's part of the model
+                let meshName = intersection.object.name;
+                if (!meshName && intersection.object.parent) {
+                    // Try to find mesh name in parent hierarchy
+                    let current = intersection.object;
+                    while (current && !meshName) {
+                        meshName = current.name;
+                        current = current.parent;
+                    }
+                }
+
+                console.log("VR interaction with mesh:", meshName);
+                if (meshName && clickableObjects[meshName]) {
+                    focusOnObject(meshName);
+                    showStoryForMesh(meshName);
+                } else {
+                    console.log('No valid mesh name found for interaction');
+                }
+            } else {
+                console.log('No intersections found');
+            }
         }
 
         // Setup both controllers
@@ -306,6 +357,11 @@
         setupControllerEvents(leftController);
 
         // VR Back Button functionality
+        vrBackButton.addEventListener('triggerdown', () => {
+            console.log('VR Back button trigger pressed');
+            resetCamera();
+        });
+
         vrBackButton.addEventListener('click', () => {
             console.log('VR Back button clicked');
             resetCamera();
@@ -323,21 +379,19 @@
         });
 
         function handleVRClick(evt) {
+            console.log('VR Click event triggered');
+
             // Check if clicking the VR back button
             if (evt.detail.intersection && evt.detail.intersection.object &&
                 evt.detail.intersection.object.el === vrBackButton) {
+                console.log('VR back button clicked');
                 resetCamera();
                 return;
             }
 
-            // Check for model intersection
-            const intersection = evt.target.components.raycaster.getIntersection(modelEl);
-            if (intersection && intersection.object && intersection.object.name) {
-                const meshName = intersection.object.name;
-                console.log("VR Click detected on:", meshName);
-                focusOnObject(meshName);
-                showStoryForMesh(meshName);
-            }
+            // Get the controller that triggered the event
+            const controller = evt.target;
+            handleVRInteraction(controller);
         }
 
         // Desktop click handling (unchanged)
