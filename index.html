@@ -119,16 +119,16 @@
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
         <!-- VR Text Panel for stories in VR mode -->
-        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 6; height: 3"
-            material="color: #1a1a2e; opacity: 0.95; transparent: true; shader: flat"
-            text="value: ; color: #ffffff; align: center; width: 10; font: roboto; letterSpacing: 1; lineHeight: 50; wrapCount: 60"
-            position="0 2 -3" visible="false">
+        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 8; height: 4"
+            material="color: #2c3e50; opacity: 0.95; transparent: true; shader: flat"
+            text="value: ; color: #ffffff; align: center; width: 12; font: roboto; letterSpacing: 2; lineHeight: 60; wrapCount: 80"
+            position="0 2 -4" visible="false">
         </a-entity>
 
         <!-- VR Back Button -->
-        <a-entity id="vrBackButton" geometry="primitive: plane; width: 1.5; height: 0.6"
-            material="color: #ffffff; opacity: 0.95; shader: flat"
-            text="value: ← Back; color: #000000; align: center; width: 12; font: roboto" position="0 0.5 -3"
+        <a-entity id="vrBackButton" geometry="primitive: plane; width: 2; height: 0.8"
+            material="color: #34495e; opacity: 0.95; shader: flat"
+            text="value: ← Back; color: #ffffff; align: center; width: 15; font: roboto" position="0 -0.5 -4"
             visible="false" class="clickable">
         </a-entity>
 
@@ -142,11 +142,11 @@
             <a-camera look-controls wasd-controls></a-camera>
             <!-- Enhanced VR Controllers with proper raycaster setup -->
             <a-entity id="rightController" laser-controls="hand: right"
-                raycaster="objects: #model; recursive: true; far: 50"
+                raycaster="objects: #model, #vrBackButton; recursive: true; far: 50"
                 line="color: #ff0000; opacity: 0.8; visible: true">
             </a-entity>
             <a-entity id="leftController" laser-controls="hand: left"
-                raycaster="objects: #model; recursive: true; far: 50"
+                raycaster="objects: #model, #vrBackButton; recursive: true; far: 50"
                 line="color: #0066ff; opacity: 0.8; visible: true">
             </a-entity>
         </a-entity>
@@ -205,23 +205,14 @@
                 let cleanText = text.replace(/<[^>]*>/g, ''); // Remove HTML tags
                 cleanText = cleanText.replace(/🛏️|💻|🪴|🎬|🖼️|🔊|💡|🟪|✨/g, ''); // Remove emojis
                 cleanText = cleanText.replace(/—/g, ' - '); // Replace em dashes
+                cleanText = cleanText.replace(/\s+/g, ' ').trim(); // Clean up extra spaces
 
-                // Split into title and content for better formatting
-                const lines = cleanText.split('\n').filter(line => line.trim());
-                let formattedText = '';
-
-                if (lines.length > 0) {
-                    // First line is usually the title
-                    formattedText = lines[0].replace('The ', '').trim();
-                    if (lines.length > 1) {
-                        formattedText += '\n\n' + lines.slice(1).join('\n');
-                    }
-                }
-
-                // Show VR text panel
-                vrTextPanel.setAttribute('text', 'value', formattedText);
+                // Show VR text panel with cleaned text
+                vrTextPanel.setAttribute('text', 'value', cleanText);
                 vrTextPanel.setAttribute('visible', true);
                 vrBackButton.setAttribute('visible', true);
+
+                console.log('VR text panel shown with text:', cleanText);
             } else {
                 // Show desktop overlay
                 storyOverlay.innerHTML = text;
@@ -342,8 +333,8 @@
                 console.log('First intersection:', intersection);
 
                 // Check if it's the VR back button
-                if (intersection.object.el === vrBackButton) {
-                    console.log('VR Back button triggered');
+                if (intersection.object.el && intersection.object.el.id === 'vrBackButton') {
+                    console.log('VR Back button triggered via intersection');
                     resetCamera();
                     return;
                 }
