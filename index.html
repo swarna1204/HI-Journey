@@ -119,15 +119,17 @@
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
         <!-- VR Text Panel for stories in VR mode -->
-        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 4; height: 2"
-            material="color: #222831; opacity: 0.9; transparent: true"
-            text="value: ; color: white; align: center; width: 8; font: roboto" position="0 2 -3" visible="false">
+        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 6; height: 3"
+            material="color: #1a1a2e; opacity: 0.95; transparent: true; shader: flat"
+            text="value: ; color: #ffffff; align: center; width: 10; font: roboto; letterSpacing: 1; lineHeight: 50; wrapCount: 60"
+            position="0 2 -3" visible="false">
         </a-entity>
 
         <!-- VR Back Button -->
-        <a-entity id="vrBackButton" geometry="primitive: plane; width: 1; height: 0.5"
-            material="color: white; opacity: 0.9" text="value: Back; color: black; align: center; width: 10"
-            position="-1.5 0.5 -3" visible="false" class="clickable">
+        <a-entity id="vrBackButton" geometry="primitive: plane; width: 1.5; height: 0.6"
+            material="color: #ffffff; opacity: 0.95; shader: flat"
+            text="value: ← Back; color: #000000; align: center; width: 12; font: roboto" position="0 0.5 -3"
+            visible="false" class="clickable">
         </a-entity>
 
         <a-assets>
@@ -199,8 +201,25 @@
 
         function showStory(text) {
             if (isInVR) {
+                // Clean text for VR and format it better
+                let cleanText = text.replace(/<[^>]*>/g, ''); // Remove HTML tags
+                cleanText = cleanText.replace(/🛏️|💻|🪴|🎬|🖼️|🔊|💡|🟪|✨/g, ''); // Remove emojis
+                cleanText = cleanText.replace(/—/g, ' - '); // Replace em dashes
+
+                // Split into title and content for better formatting
+                const lines = cleanText.split('\n').filter(line => line.trim());
+                let formattedText = '';
+
+                if (lines.length > 0) {
+                    // First line is usually the title
+                    formattedText = lines[0].replace('The ', '').trim();
+                    if (lines.length > 1) {
+                        formattedText += '\n\n' + lines.slice(1).join('\n');
+                    }
+                }
+
                 // Show VR text panel
-                vrTextPanel.setAttribute('text', 'value', text.replace(/<[^>]*>/g, '').replace(/🛏️|💻|🪴|🎬|🖼️|🔊|💡|🟪|✨/g, ''));
+                vrTextPanel.setAttribute('text', 'value', formattedText);
                 vrTextPanel.setAttribute('visible', true);
                 vrBackButton.setAttribute('visible', true);
             } else {
