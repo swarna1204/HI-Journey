@@ -107,25 +107,26 @@
 
         <!-- Enhanced VR Text Panel with title and body text separation -->
         <a-entity id="vrTextPanel" position="0 8 0" visible="false">
-            <!-- White background with rounded corners - made taller for longer text -->
-            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 14; height: 5"
+            <!-- White background with rounded corners - made much taller for long text -->
+            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 16; height: 7"
                 material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
             </a-entity>
 
-            <!-- Emoji section - larger and more visible -->
-            <a-text id="vrPanelEmoji" value="🪴" color="#FF6B35" align="center" width="12" font="roboto"
-                position="0 1.8 0.002">
+            <!-- Emoji section - using geometry primitive for better visibility -->
+            <a-text id="vrPanelEmoji" value="🪴" color="#FF4444" align="center" width="8" font="roboto"
+                position="0 2.8 0.01" geometry="primitive: plane; width: 1; height: 1"
+                material="color: #FFEB3B; transparent: true; opacity: 0.3">
             </a-text>
 
-            <!-- Title section -->
-            <a-text id="vrPanelTitle" value="The Plant" color="#222831" align="center" width="16" font="roboto"
-                font-weight="bold" letter-spacing="2" position="0 1.1 0.001">
+            <!-- Title section - moved down more -->
+            <a-text id="vrPanelTitle" value="The Plant" color="#222831" align="center" width="18" font="roboto"
+                font-weight="bold" letter-spacing="3" position="0 2.0 0.001">
             </a-text>
 
-            <!-- Body text section - more space and better wrapping -->
+            <!-- Body text section - much more space and better formatting -->
             <a-text id="vrPanelBody" value="Roots take time. I was growing quietly in a new city, finding my place."
-                color="#555555" align="center" width="10" font="roboto" letter-spacing="0.5" line-height="40"
-                wrap-count="40" position="0 -0.2 0.001">
+                color="#555555" align="center" width="8" font="roboto" letter-spacing="0.5" line-height="55"
+                wrap-count="35" position="0 0.2 0.001">
             </a-text>
         </a-entity>
 
