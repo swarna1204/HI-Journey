@@ -107,25 +107,25 @@
 
         <!-- Enhanced VR Text Panel with title and body text separation -->
         <a-entity id="vrTextPanel" position="0 8 0" visible="false">
-            <!-- White background with rounded corners -->
-            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 12; height: 3.5"
+            <!-- White background with rounded corners - made taller for longer text -->
+            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 14; height: 5"
                 material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
             </a-entity>
 
-            <!-- Emoji section -->
-            <a-text id="vrPanelEmoji" value="🪴" color="#4CAF50" align="center" width="18" font="roboto"
-                position="0 1.0 0.001">
+            <!-- Emoji section - larger and more visible -->
+            <a-text id="vrPanelEmoji" value="🪴" color="#FF6B35" align="center" width="12" font="roboto"
+                position="0 1.8 0.002">
             </a-text>
 
             <!-- Title section -->
-            <a-text id="vrPanelTitle" value="The Plant" color="#222831" align="center" width="14" font="roboto"
-                font-weight="bold" letter-spacing="2" position="0 0.4 0.001">
+            <a-text id="vrPanelTitle" value="The Plant" color="#222831" align="center" width="16" font="roboto"
+                font-weight="bold" letter-spacing="2" position="0 1.1 0.001">
             </a-text>
 
-            <!-- Body text section -->
+            <!-- Body text section - more space and better wrapping -->
             <a-text id="vrPanelBody" value="Roots take time. I was growing quietly in a new city, finding my place."
-                color="#555555" align="center" width="11" font="roboto" letter-spacing="1" line-height="45"
-                wrap-count="45" position="0 -0.4 0.001">
+                color="#555555" align="center" width="10" font="roboto" letter-spacing="0.5" line-height="40"
+                wrap-count="40" position="0 -0.2 0.001">
             </a-text>
         </a-entity>
 
