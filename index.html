@@ -112,21 +112,15 @@
                 material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
             </a-entity>
 
-            <!-- Emoji section - using geometry primitive for better visibility -->
-            <a-text id="vrPanelEmoji" value="🪴" color="#FF4444" align="center" width="8" font="roboto"
-                position="0 2.8 0.01" geometry="primitive: plane; width: 1; height: 1"
-                material="color: #FFEB3B; transparent: true; opacity: 0.3">
-            </a-text>
-
-            <!-- Title section - moved down more -->
+            <!-- Title section - moved up since emoji is removed -->
             <a-text id="vrPanelTitle" value="The Plant" color="#222831" align="center" width="18" font="roboto"
-                font-weight="bold" letter-spacing="3" position="0 2.0 0.001">
+                font-weight="bold" letter-spacing="3" position="0 2.5 0.001">
             </a-text>
 
-            <!-- Body text section - much more space and better formatting -->
+            <!-- Body text section - updated wrap-count to 50 -->
             <a-text id="vrPanelBody" value="Roots take time. I was growing quietly in a new city, finding my place."
                 color="#555555" align="center" width="8" font="roboto" letter-spacing="0.5" line-height="55"
-                wrap-count="35" position="0 0.2 0.001">
+                wrap-count="50" position="0 0.2 0.001">
             </a-text>
         </a-entity>
 
@@ -174,7 +168,6 @@
         const backButton = document.getElementById('backButton');
         const storyOverlay = document.getElementById('storyOverlay');
         const vrTextPanel = document.getElementById('vrTextPanel');
-        const vrPanelEmoji = document.getElementById('vrPanelEmoji');
         const vrPanelTitle = document.getElementById('vrPanelTitle');
         const vrPanelBody = document.getElementById('vrPanelBody');
         const vrBackButton = document.getElementById('vrBackButton');
@@ -274,8 +267,7 @@
 
             const story = storyData[storyKey] || storyData.default;
 
-            // Update VR panel components
-            vrPanelEmoji.setAttribute('value', story.emoji);
+            // Update VR panel components - emoji removed
             vrPanelTitle.setAttribute('value', story.title);
             vrPanelBody.setAttribute('value', story.body);
 
