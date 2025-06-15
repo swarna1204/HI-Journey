@@ -118,60 +118,91 @@
         <a-entity light="type: ambient; intensity: 1"></a-entity>
         <a-entity light="type: directional; intensity: 0.8" position="5 10 5"></a-entity>
 
-        <!-- VR Text Panel with rounded corners using rounded-rectangle geometry -->
-        <a-entity id="vrTextPanel" geometry="primitive: plane; width: 10; height: 3"
-            material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 2 -3" visible="false">
+        <!-- VR Text Panel with proper rounded corners -->
+        <a-entity id="vrTextPanel" position="0 2 -3" visible="false">
 
-            <!-- Rounded corner background using multiple overlapped planes -->
-            <a-entity id="vrPanelBg" geometry="primitive: plane; width: 10; height: 3"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 0 -0.001">
+            <!-- Main background panel -->
+            <a-entity geometry="primitive: plane; width: 9; height: 2.4"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="0 0 0">
             </a-entity>
 
-            <!-- Corner rounded elements -->
-            <a-entity geometry="primitive: cylinder; radius: 0.3; height: 0.01; segmentsRadial: 8"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="4.7 1.2 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.3; height: 0.01; segmentsRadial: 8"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="-4.7 1.2 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.3; height: 0.01; segmentsRadial: 8"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="4.7 -1.2 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.3; height: 0.01; segmentsRadial: 8"
-                material="color: #222831; opacity: 0.95; transparent: true; shader: flat" position="-4.7 -1.2 0.001"
-                rotation="90 0 0"></a-entity>
+            <!-- Rounded corners using spheres -->
+            <a-entity geometry="primitive: sphere; radius: 0.2"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="4.3 1.0 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.2"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="-4.3 1.0 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.2"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="4.3 -1.0 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.2"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="-4.3 -1.0 0.001"></a-entity>
 
-            <!-- Emoji and Title at the top -->
-            <a-text id="vrEmojiTitle" value="" color="#ffffff" align="center" width="12" font="roboto"
-                position="0 0.8 0.01" letter-spacing="1">
+            <!-- Edge fillers for rounded appearance -->
+            <a-entity geometry="primitive: plane; width: 0.4; height: 2.4"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="4.3 0 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 0.4; height: 2.4"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="-4.3 0 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 9; height: 0.4"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="0 1.0 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 9; height: 0.4"
+                material="color: #222831; opacity: 0.95; transparent: true; shader: flat"
+                position="0 -1.0 0.001"></a-entity>
+
+            <!-- Emoji and Title at the top with better contrast -->
+            <a-text id="vrEmojiTitle" value="" color="#ffffff" align="center" width="8" font="roboto"
+                position="0 0.6 0.02" letter-spacing="2" geometry="primitive: plane; width: 8; height: 0.8"
+                material="color: rgba(0,0,0,0.3); transparent: true; shader: flat">
             </a-text>
 
-            <!-- Main content text below -->
-            <a-text id="vrContentText" value="" color="#ffffff" align="center" width="10" font="roboto"
-                position="0 -0.3 0.01" letter-spacing="1" line-height="50" wrap-count="60">
+            <!-- Main content text below with better wrapping -->
+            <a-text id="vrContentText" value="" color="#ffffff" align="center" width="7" font="roboto"
+                position="0 -0.2 0.02" letter-spacing="1" line-height="60" wrap-count="45">
             </a-text>
         </a-entity>
 
-        <!-- VR Back Button with rounded corners -->
-        <a-entity id="vrBackButton" geometry="primitive: plane; width: 1.8; height: 0.8"
-            material="color: #ffffff; opacity: 0.95; shader: flat" position="0 0.3 -3" visible="false"
-            class="clickable">
+        <!-- VR Back Button with proper rounded corners -->
+        <a-entity id="vrBackButton" position="0 0.3 -3" visible="false" class="clickable">
 
-            <!-- Rounded corners for back button -->
-            <a-entity geometry="primitive: cylinder; radius: 0.15; height: 0.01; segmentsRadial: 8"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="0.75 0.25 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.15; height: 0.01; segmentsRadial: 8"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="-0.75 0.25 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.15; height: 0.01; segmentsRadial: 8"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="0.75 -0.25 0.001"
-                rotation="90 0 0"></a-entity>
-            <a-entity geometry="primitive: cylinder; radius: 0.15; height: 0.01; segmentsRadial: 8"
-                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat" position="-0.75 -0.25 0.001"
-                rotation="90 0 0"></a-entity>
+            <!-- Main button background -->
+            <a-entity geometry="primitive: plane; width: 1.6; height: 0.6"
+                material="color: #ffffff; opacity: 0.95; shader: flat" position="0 0 0">
+            </a-entity>
 
-            <a-text value="← Back" color="#000000" align="center" width="12" font="roboto" position="0 0 0.01">
+            <!-- Rounded corners -->
+            <a-entity geometry="primitive: sphere; radius: 0.15"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="0.65 0.15 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.15"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="-0.65 0.15 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.15"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="0.65 -0.15 0.001"></a-entity>
+            <a-entity geometry="primitive: sphere; radius: 0.15"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="-0.65 -0.15 0.001"></a-entity>
+
+            <!-- Edge fillers -->
+            <a-entity geometry="primitive: plane; width: 0.3; height: 0.6"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="0.65 0 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 0.3; height: 0.6"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="-0.65 0 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 1.6; height: 0.3"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="0 0.15 0.001"></a-entity>
+            <a-entity geometry="primitive: plane; width: 1.6; height: 0.3"
+                material="color: #ffffff; opacity: 0.95; transparent: true; shader: flat"
+                position="0 -0.15 0.001"></a-entity>
+
+            <a-text value="← Back" color="#000000" align="center" width="12" font="roboto" position="0 0 0.02">
             </a-text>
         </a-entity>
 
@@ -345,10 +376,12 @@
 
             if (isInVR) {
                 // Show VR text panel with emoji at top, content below
-                vrEmojiTitle.setAttribute('value', `${storyInfo.emoji}  ${storyInfo.title}`);
+                // Format with larger emoji and spaced title
+                vrEmojiTitle.setAttribute('value', `${storyInfo.emoji}   ${storyInfo.title}`);
                 vrContentText.setAttribute('value', storyInfo.content);
                 vrTextPanel.setAttribute('visible', true);
                 vrBackButton.setAttribute('visible', true);
+                console.log("VR panel shown with:", storyInfo.emoji, storyInfo.title);
             } else {
                 // Show desktop overlay with HTML formatting
                 const htmlText = `${storyInfo.emoji} <b>${storyInfo.title}</b><br>${storyInfo.content}`;
@@ -384,7 +417,7 @@
 
             setTimeout(() => {
                 if (isInVR) {
-                    vrEmojiTitle.setAttribute('value', "🌱  A New City, A New Start");
+                    vrEmojiTitle.setAttribute('value', "🌱   A New City, A New Start");
                     vrContentText.setAttribute('value', "My Hyper Island journey began here, where everything felt new and full of hope.");
                     vrTextPanel.setAttribute('visible', true);
                 } else {
