@@ -67,11 +67,13 @@ This project challenged me to combine **storytelling, code, and spatial design**
 - Debug **WebXR interactions** across devices
 - Design emotionally resonant experiences using minimal elements
 - Align user input (controller clicks, cursor clicks) to dynamic UI responses
+- Integrated feedback tracking to see how users interact with the space
 
 If I had more time, I would:
 - Add **audio narration** per story
 - Build out additional scenes as part of a journey progression
-- Integrate **analytics or feedback tracking** to see how users interact with the space
+- Would have added more beautifull lighting and appealing interface
+
 
 ---
 
